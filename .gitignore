@@ -1,0 +1,10 @@
+# Build output
+bin/
+
+# Test
+coverage.out
+coverage.html
+
+# Environment
+.env
+.env.*
