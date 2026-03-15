@@ -271,7 +271,7 @@ type MimeType struct {
 // FileService provides file operations via the REST API.
 type FileService interface {
 	List(ctx context.Context, opts FileListOptions) (*FileListResult, error)
-	Info(ctx context.Context, uuid string) (*File, error)
+	Info(ctx context.Context, uuid string, includeAppData bool) (*File, error)
 	Upload(ctx context.Context, params UploadParams) (*File, error)
 	UploadFromURL(ctx context.Context, params URLUploadParams) (*File, error)
 	Store(ctx context.Context, uuids []string) ([]File, error)

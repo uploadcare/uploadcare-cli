@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -20,6 +21,12 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 			if verbose && quiet {
 				return fmt.Errorf("--verbose and --quiet are mutually exclusive")
 			}
+
+			// Store the root command reference in context so helpers
+			// can lazy-init the config loader on first access.
+			ctx := context.WithValue(cmd.Context(), configCmdKey{}, cmd)
+			cmd.SetContext(ctx)
+
 			return nil
 		},
 	}
@@ -49,6 +56,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 
 	// Subcommands
 	rootCmd.AddCommand(newVersionCmd(version, commit, date))
+	rootCmd.AddCommand(newFileCmd(nil))
 
 	return rootCmd
 }
