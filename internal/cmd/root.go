@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,6 +13,15 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		Short:         "Uploadcare CLI — manage files, projects, and more",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			f := cmd.Root().PersistentFlags()
+			verbose, _ := f.GetBool("verbose")
+			quiet, _ := f.GetBool("quiet")
+			if verbose && quiet {
+				return fmt.Errorf("--verbose and --quiet are mutually exclusive")
+			}
+			return nil
+		},
 	}
 
 	// Global flags
@@ -19,13 +30,15 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	// Authentication
 	flags.String("public-key", "", "API public key (env: UPLOADCARE_PUBLIC_KEY)")
 	flags.String("secret-key", "", "API secret key (env: UPLOADCARE_SECRET_KEY)")
-	flags.String("token", "", "Account-level bearer token (env: UPLOADCARE_TOKEN)")
+	flags.String("project-api-token", "", "Account-level bearer token (env: UPLOADCARE_PROJECT_API_TOKEN)")
 	flags.String("project", "", "Project name from config (env: UPLOADCARE_PROJECT)")
 
 	// Output control
 	flags.String("json", "", "Output as JSON; optional comma-separated field list")
+	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "Apply jq expression to JSON output (implies --json)")
 	flags.BoolP("quiet", "q", false, "Suppress all non-error output")
+	flags.BoolP("verbose", "v", false, "Print HTTP request/response details to stderr (env: UPLOADCARE_VERBOSE)")
 	flags.Bool("no-color", false, "Disable colored output (env: NO_COLOR)")
 
 	// Base URL overrides

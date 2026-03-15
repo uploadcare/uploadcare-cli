@@ -35,12 +35,65 @@ func TestVersionCmd(t *testing.T) {
 	}
 }
 
+func TestRootCmd_JSONFlagNoArg(t *testing.T) {
+	root := NewRootCmd("dev", "none", "unknown")
+	root.SetOut(new(bytes.Buffer))
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"--json", "version"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("--json without argument should not error, got: %v", err)
+	}
+
+	val, err := root.PersistentFlags().GetString("json")
+	if err != nil {
+		t.Fatalf("GetString(json): %v", err)
+	}
+	if val != "true" {
+		t.Errorf("--json without arg should be %q, got %q", "true", val)
+	}
+}
+
+func TestRootCmd_JSONFlagWithFields(t *testing.T) {
+	root := NewRootCmd("dev", "none", "unknown")
+	root.SetOut(new(bytes.Buffer))
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"--json=uuid,size", "version"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("--json=uuid,size should not error, got: %v", err)
+	}
+
+	val, err := root.PersistentFlags().GetString("json")
+	if err != nil {
+		t.Fatalf("GetString(json): %v", err)
+	}
+	if val != "uuid,size" {
+		t.Errorf("--json=uuid,size should be %q, got %q", "uuid,size", val)
+	}
+}
+
+func TestRootCmd_VerboseQuietConflict(t *testing.T) {
+	root := NewRootCmd("dev", "none", "unknown")
+	root.SetOut(new(bytes.Buffer))
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"--verbose", "--quiet", "version"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("--verbose --quiet should produce an error")
+	}
+	if !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Errorf("error should mention mutual exclusivity, got: %v", err)
+	}
+}
+
 func TestRootCmd_HasGlobalFlags(t *testing.T) {
 	root := NewRootCmd("dev", "none", "unknown")
 
 	flags := []string{
-		"public-key", "secret-key", "token", "project",
-		"json", "jq", "quiet", "no-color",
+		"public-key", "secret-key", "project-api-token", "project",
+		"json", "jq", "quiet", "verbose", "no-color",
 		"rest-api-base", "upload-api-base", "cdn-base", "project-api-base",
 	}
 
