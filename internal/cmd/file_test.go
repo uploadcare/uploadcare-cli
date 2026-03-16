@@ -18,8 +18,9 @@ type mockFileService struct {
 	infoFunc       func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error)
 	listFunc       func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error)
 	iterateFunc    func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error
-	uploadFunc     func(ctx context.Context, params service.UploadParams) (*service.File, error)
-	storeFunc      func(ctx context.Context, uuids []string) (*service.BatchResult, error)
+	uploadFunc        func(ctx context.Context, params service.UploadParams) (*service.File, error)
+	uploadFromURLFunc func(ctx context.Context, params service.URLUploadParams) (*service.File, error)
+	storeFunc         func(ctx context.Context, uuids []string) (*service.BatchResult, error)
 	deleteFunc     func(ctx context.Context, uuids []string) (*service.BatchResult, error)
 	localCopyFunc  func(ctx context.Context, params service.LocalCopyParams) (*service.File, error)
 	remoteCopyFunc func(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error)
@@ -54,6 +55,9 @@ func (m *mockFileService) Upload(ctx context.Context, params service.UploadParam
 }
 
 func (m *mockFileService) UploadFromURL(ctx context.Context, params service.URLUploadParams) (*service.File, error) {
+	if m.uploadFromURLFunc != nil {
+		return m.uploadFromURLFunc(ctx, params)
+	}
 	return nil, errors.New("not implemented")
 }
 

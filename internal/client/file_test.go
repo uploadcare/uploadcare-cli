@@ -125,12 +125,14 @@ func TestIterate_InvalidStartingPoint(t *testing.T) {
 }
 
 func TestFileServiceInterface(t *testing.T) {
-	// Verify all interface methods exist and return appropriate errors for unimplemented ones.
+	// Verify all interface methods exist by calling UploadFromURL with test credentials.
+	// It should fail with an API error (not a panic or compilation error).
 	svc, _ := NewFileService("pub", "sec")
 	ctx := context.Background()
 
-	if _, err := svc.UploadFromURL(ctx, service.URLUploadParams{}); err == nil || err.Error() != "not implemented" {
-		t.Errorf("UploadFromURL should return 'not implemented', got: %v", err)
+	_, err := svc.UploadFromURL(ctx, service.URLUploadParams{URL: "https://example.com/test.jpg"})
+	if err == nil {
+		t.Error("UploadFromURL should return an error with invalid credentials")
 	}
 }
 

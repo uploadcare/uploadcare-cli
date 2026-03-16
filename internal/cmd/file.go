@@ -20,6 +20,7 @@ func newFileCmd(fileSvc service.FileService) *cobra.Command {
 	cmd.AddCommand(newFileInfoCmd(fileSvc))
 	cmd.AddCommand(newFileListCmd(fileSvc))
 	cmd.AddCommand(newFileUploadCmd(fileSvc))
+	cmd.AddCommand(newFileUploadFromURLCmd(fileSvc))
 	cmd.AddCommand(newFileStoreCmd(fileSvc))
 	cmd.AddCommand(newFileDeleteCmd(fileSvc))
 	cmd.AddCommand(newFileLocalCopyCmd(fileSvc))

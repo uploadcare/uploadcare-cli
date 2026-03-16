@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -210,17 +209,70 @@ func (s *fileService) Upload(ctx context.Context, params service.UploadParams) (
 
 	// The upload API returns only basic fields (no timestamps, URLs, or
 	// metadata). Fetch the complete file info from the REST API.
-	fileInfo, err := s.sdkFileSvc.Info(ctx, uploadInfo.BasicFileInfo.ID, nil)
-	if err != nil {
-		// Fall back to the partial upload response rather than failing
-		// the whole operation — the file was uploaded successfully.
-		return mapUploadFileInfo(uploadInfo), nil
-	}
-	return mapFileInfo(fileInfo), nil
+	return s.enrichUploadInfo(ctx, uploadInfo.BasicFileInfo.ID, mapUploadFileInfo(uploadInfo)), nil
 }
 
 func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploadParams) (*service.File, error) {
-	return nil, errors.New("not implemented")
+	var toStore *string
+	switch params.Store {
+	case "true":
+		toStore = ucare.String(upload.ToStoreTrue)
+	case "false":
+		toStore = ucare.String(upload.ToStoreFalse)
+	case "auto", "":
+		toStore = ucare.String(upload.ToStoreAuto)
+	default:
+		return nil, fmt.Errorf("invalid store value: %q (must be \"auto\", \"true\", or \"false\")", params.Store)
+	}
+
+	timeout := params.Timeout
+	if timeout <= 0 {
+		timeout = 5 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	sdkParams := upload.FromURLParams{
+		URL:      params.URL,
+		ToStore:  toStore,
+		Metadata: params.Metadata,
+	}
+	if params.CheckDuplicates {
+		sdkParams.CheckURLDuplicates = ucare.String(upload.URLDuplicatesTrue)
+	}
+	if params.SaveDuplicates {
+		sdkParams.SaveURLDuplicates = ucare.String(upload.URLDuplicatesTrue)
+	}
+
+	res, err := s.sdkUploadSvc.FromURL(ctx, sdkParams)
+	if err != nil {
+		return nil, err
+	}
+
+	info, ok := res.Info()
+	if ok {
+		return s.enrichUploadInfo(ctx, info.BasicFileInfo.ID, mapUploadFileInfo(info)), nil
+	}
+
+	select {
+	case info = <-res.Done():
+		return s.enrichUploadInfo(ctx, info.BasicFileInfo.ID, mapUploadFileInfo(info)), nil
+	case err = <-res.Error():
+		return nil, err
+	case <-ctx.Done():
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("upload from URL timed out after %s", timeout)
+		}
+		return nil, ctx.Err()
+	}
+}
+
+func (s *fileService) enrichUploadInfo(ctx context.Context, id string, fallback *service.File) *service.File {
+	fileInfo, err := s.sdkFileSvc.Info(ctx, id, nil)
+	if err != nil {
+		return fallback
+	}
+	return mapFileInfo(fileInfo)
 }
 
 func (s *fileService) Store(ctx context.Context, uuids []string) (*service.BatchResult, error) {
