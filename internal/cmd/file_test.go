@@ -15,18 +15,41 @@ import (
 
 // mockFileService implements service.FileService for testing.
 type mockFileService struct {
-	infoFunc func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error)
+	infoFunc       func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error)
+	listFunc       func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error)
+	iterateFunc    func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error
+	uploadFunc     func(ctx context.Context, params service.UploadParams) (*service.File, error)
+	storeFunc      func(ctx context.Context, uuids []string) (*service.BatchResult, error)
+	deleteFunc     func(ctx context.Context, uuids []string) (*service.BatchResult, error)
+	localCopyFunc  func(ctx context.Context, params service.LocalCopyParams) (*service.File, error)
+	remoteCopyFunc func(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error)
 }
 
 func (m *mockFileService) Info(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
-	return m.infoFunc(ctx, uuid, includeAppData)
-}
-
-func (m *mockFileService) List(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+	if m.infoFunc != nil {
+		return m.infoFunc(ctx, uuid, includeAppData)
+	}
 	return nil, errors.New("not implemented")
 }
 
+func (m *mockFileService) List(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+	if m.listFunc != nil {
+		return m.listFunc(ctx, opts)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockFileService) Iterate(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error {
+	if m.iterateFunc != nil {
+		return m.iterateFunc(ctx, opts, fn)
+	}
+	return errors.New("not implemented")
+}
+
 func (m *mockFileService) Upload(ctx context.Context, params service.UploadParams) (*service.File, error) {
+	if m.uploadFunc != nil {
+		return m.uploadFunc(ctx, params)
+	}
 	return nil, errors.New("not implemented")
 }
 
@@ -34,19 +57,31 @@ func (m *mockFileService) UploadFromURL(ctx context.Context, params service.URLU
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockFileService) Store(ctx context.Context, uuids []string) ([]service.File, error) {
+func (m *mockFileService) Store(ctx context.Context, uuids []string) (*service.BatchResult, error) {
+	if m.storeFunc != nil {
+		return m.storeFunc(ctx, uuids)
+	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockFileService) Delete(ctx context.Context, uuids []string) ([]service.File, error) {
+func (m *mockFileService) Delete(ctx context.Context, uuids []string) (*service.BatchResult, error) {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, uuids)
+	}
 	return nil, errors.New("not implemented")
 }
 
 func (m *mockFileService) LocalCopy(ctx context.Context, params service.LocalCopyParams) (*service.File, error) {
+	if m.localCopyFunc != nil {
+		return m.localCopyFunc(ctx, params)
+	}
 	return nil, errors.New("not implemented")
 }
 
 func (m *mockFileService) RemoteCopy(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error) {
+	if m.remoteCopyFunc != nil {
+		return m.remoteCopyFunc(ctx, params)
+	}
 	return nil, errors.New("not implemented")
 }
 
@@ -276,5 +311,152 @@ func TestFileInfo_IncludeAppdata(t *testing.T) {
 
 	if !capturedIncludeAppData {
 		t.Error("includeAppData should be true when --include-appdata flag is set")
+	}
+}
+
+// --- File list tests ---
+
+func TestFileList_Human(t *testing.T) {
+	mock := &mockFileService{
+		listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+			return &service.FileListResult{
+				Files: []service.File{*testFile()},
+				Total: 1,
+			}, nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "file", "list")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, s := range []string{"UUID", "SIZE", "FILENAME", "STORED", "UPLOADED", "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "photo.jpg"} {
+		if !strings.Contains(stdout, s) {
+			t.Errorf("output missing %q\ngot:\n%s", s, stdout)
+		}
+	}
+}
+
+func TestFileList_JSON(t *testing.T) {
+	mock := &mockFileService{
+		listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+			return &service.FileListResult{
+				Files: []service.File{*testFile()},
+				Total: 1,
+			}, nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "--json", "file", "list")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result []map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &result); err != nil {
+		t.Fatalf("output is not valid JSON array: %v\ngot: %s", err, stdout)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(result))
+	}
+	if result[0]["uuid"] != "a1b2c3d4-e5f6-7890-abcd-ef1234567890" {
+		t.Errorf("uuid = %v", result[0]["uuid"])
+	}
+}
+
+func TestFileList_PageAll(t *testing.T) {
+	files := []service.File{*testFile()}
+	mock := &mockFileService{
+		iterateFunc: func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error {
+			for _, f := range files {
+				if err := fn(f); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "--json", "file", "list", "--page-all")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(stdout), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 NDJSON line, got %d", len(lines))
+	}
+
+	var obj map[string]interface{}
+	if err := json.Unmarshal([]byte(lines[0]), &obj); err != nil {
+		t.Fatalf("invalid NDJSON: %v", err)
+	}
+	if obj["uuid"] != "a1b2c3d4-e5f6-7890-abcd-ef1234567890" {
+		t.Errorf("uuid = %v", obj["uuid"])
+	}
+}
+
+func TestFileList_PageAll_Quiet(t *testing.T) {
+	var iterated bool
+	mock := &mockFileService{
+		iterateFunc: func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error {
+			iterated = true
+			return fn(*testFile())
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "--quiet", "file", "list", "--page-all")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !iterated {
+		t.Error("iterate should still be called")
+	}
+	if stdout != "" {
+		t.Errorf("--quiet should suppress all output, got:\n%s", stdout)
+	}
+}
+
+func TestFileList_Options(t *testing.T) {
+	var capturedOpts service.FileListOptions
+
+	mock := &mockFileService{
+		listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+			capturedOpts = opts
+			return &service.FileListResult{}, nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	_, _, err := executeCommand(t, root, "file", "list",
+		"--ordering", "-datetime_uploaded",
+		"--limit", "50",
+		"--stored", "true",
+		"--removed",
+		"--include-appdata",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if capturedOpts.Ordering != "-datetime_uploaded" {
+		t.Errorf("ordering = %q, want %q", capturedOpts.Ordering, "-datetime_uploaded")
+	}
+	if capturedOpts.Limit != 50 {
+		t.Errorf("limit = %d, want 50", capturedOpts.Limit)
+	}
+	if capturedOpts.Stored == nil || *capturedOpts.Stored != true {
+		t.Error("stored should be true")
+	}
+	if !capturedOpts.Removed {
+		t.Error("removed should be true")
+	}
+	if !capturedOpts.IncludeAppData {
+		t.Error("include appdata should be true")
 	}
 }

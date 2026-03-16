@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"time"
 )
 
@@ -46,12 +47,19 @@ type FileListResult struct {
 
 // UploadParams configures a direct file upload.
 type UploadParams struct {
-	Path               string
+	Data               io.ReadSeeker
+	Name               string
+	Size               int64
+	ContentType        string
 	Store              string // "auto", "true", "false"
 	Metadata           map[string]string
-	MultipartThreshold int64
-	ForceMultipart     bool
-	ForceDirect        bool
+	MultipartThreshold *int64
+}
+
+// BatchResult holds results and problems from a batch operation.
+type BatchResult struct {
+	Files    []File            `json:"results"`
+	Problems map[string]string `json:"problems,omitempty"`
 }
 
 // URLUploadParams configures an upload-from-URL operation.
@@ -81,8 +89,9 @@ type RemoteCopyParams struct {
 
 // RemoteCopyResult is the response from a remote copy operation.
 type RemoteCopyResult struct {
-	Type   string `json:"type"`
-	Result string `json:"result"`
+	Type          string `json:"type"`
+	Result        string `json:"result"`
+	AlreadyExists bool   `json:"already_exists"`
 }
 
 // Group represents an Uploadcare file group.
@@ -271,11 +280,12 @@ type MimeType struct {
 // FileService provides file operations via the REST API.
 type FileService interface {
 	List(ctx context.Context, opts FileListOptions) (*FileListResult, error)
+	Iterate(ctx context.Context, opts FileListOptions, fn func(File) error) error
 	Info(ctx context.Context, uuid string, includeAppData bool) (*File, error)
 	Upload(ctx context.Context, params UploadParams) (*File, error)
 	UploadFromURL(ctx context.Context, params URLUploadParams) (*File, error)
-	Store(ctx context.Context, uuids []string) ([]File, error)
-	Delete(ctx context.Context, uuids []string) ([]File, error)
+	Store(ctx context.Context, uuids []string) (*BatchResult, error)
+	Delete(ctx context.Context, uuids []string) (*BatchResult, error)
 	LocalCopy(ctx context.Context, params LocalCopyParams) (*File, error)
 	RemoteCopy(ctx context.Context, params RemoteCopyParams) (*RemoteCopyResult, error)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/uploadcare/uploadcare-cli/internal/service"
@@ -94,31 +95,42 @@ func TestMapFileInfo_IncludeAppDataFlag(t *testing.T) {
 	}
 }
 
+func TestList_InvalidStartingPoint(t *testing.T) {
+	svc, _ := NewFileService("pub", "sec")
+	_, err := svc.List(context.Background(), service.FileListOptions{
+		StartingPoint: "2026-03-01 12:00:00",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid starting-point")
+	}
+	if !strings.Contains(err.Error(), "invalid --starting-point") {
+		t.Errorf("error should mention --starting-point, got: %v", err)
+	}
+}
+
+func TestIterate_InvalidStartingPoint(t *testing.T) {
+	svc, _ := NewFileService("pub", "sec")
+	err := svc.Iterate(context.Background(), service.FileListOptions{
+		StartingPoint: "not-a-date",
+	}, func(f service.File) error {
+		t.Fatal("callback should not be called")
+		return nil
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid starting-point")
+	}
+	if !strings.Contains(err.Error(), "invalid --starting-point") {
+		t.Errorf("error should mention --starting-point, got: %v", err)
+	}
+}
+
 func TestFileServiceInterface(t *testing.T) {
 	// Verify all interface methods exist and return appropriate errors for unimplemented ones.
 	svc, _ := NewFileService("pub", "sec")
 	ctx := context.Background()
 
-	if _, err := svc.List(ctx, service.FileListOptions{}); err == nil || err.Error() != "not implemented" {
-		t.Errorf("List should return 'not implemented', got: %v", err)
-	}
-	if _, err := svc.Upload(ctx, service.UploadParams{}); err == nil || err.Error() != "not implemented" {
-		t.Errorf("Upload should return 'not implemented', got: %v", err)
-	}
 	if _, err := svc.UploadFromURL(ctx, service.URLUploadParams{}); err == nil || err.Error() != "not implemented" {
 		t.Errorf("UploadFromURL should return 'not implemented', got: %v", err)
-	}
-	if _, err := svc.Store(ctx, nil); err == nil || err.Error() != "not implemented" {
-		t.Errorf("Store should return 'not implemented', got: %v", err)
-	}
-	if _, err := svc.Delete(ctx, nil); err == nil || err.Error() != "not implemented" {
-		t.Errorf("Delete should return 'not implemented', got: %v", err)
-	}
-	if _, err := svc.LocalCopy(ctx, service.LocalCopyParams{}); err == nil || err.Error() != "not implemented" {
-		t.Errorf("LocalCopy should return 'not implemented', got: %v", err)
-	}
-	if _, err := svc.RemoteCopy(ctx, service.RemoteCopyParams{}); err == nil || err.Error() != "not implemented" {
-		t.Errorf("RemoteCopy should return 'not implemented', got: %v", err)
 	}
 }
 
