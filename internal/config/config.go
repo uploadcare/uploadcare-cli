@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
 // Sentinel errors.
@@ -46,6 +47,7 @@ func ConfigPath() string {
 type ProjectCredentials struct {
 	PublicKey string
 	SecretKey string
+	CDNBase   string // optional per-project CDN base URL from config
 }
 
 // RequirePublicKey returns an error if the public key is missing.
@@ -93,6 +95,7 @@ type Config struct {
 type ProjectEntry struct {
 	PublicKey string `mapstructure:"public_key"`
 	SecretKey string `mapstructure:"secret_key"`
+	CDNBase   string `mapstructure:"cdn_base"`
 }
 
 // Loader loads and resolves configuration from flags, env vars, and config file.
@@ -134,7 +137,6 @@ func (l *Loader) Init() error {
 	// Defaults
 	l.v.SetDefault("rest_api_base", DefaultRESTAPIBase)
 	l.v.SetDefault("upload_api_base", DefaultUploadAPIBase)
-	l.v.SetDefault("cdn_base", DefaultCDNBase)
 	l.v.SetDefault("project_api_base", DefaultProjectAPIBase)
 
 	// Read config file — missing file is fine, anything else is a real error.
@@ -254,12 +256,13 @@ func (l *Loader) lookupProject(name string) (*ProjectCredentials, error) {
 
 	pubKey, _ := projectMap["public_key"].(string)
 	secKey, _ := projectMap["secret_key"].(string)
+	cdnBase, _ := projectMap["cdn_base"].(string)
 
 	if pubKey == "" || secKey == "" {
 		return nil, fmt.Errorf("%w: %q (missing public_key or secret_key)", ErrProjectNotFound, name)
 	}
 
-	return &ProjectCredentials{PublicKey: pubKey, SecretKey: secKey}, nil
+	return &ProjectCredentials{PublicKey: pubKey, SecretKey: secKey, CDNBase: cdnBase}, nil
 }
 
 // ResolveProjectAPIToken resolves the account-level bearer token using the priority order:
@@ -271,6 +274,40 @@ func (l *Loader) lookupProject(name string) (*ProjectCredentials, error) {
 // RequireProjectAPIToken on the result to validate.
 func (l *Loader) ResolveProjectAPIToken() string {
 	return l.v.GetString("project_api_token")
+}
+
+// ResolveCDNBase returns the CDN base URL using the priority order:
+//  1. --cdn-base flag
+//  2. UPLOADCARE_CDN_BASE env var
+//  3. cdn_base from the resolved project entry
+//  4. Top-level cdn_base in config file
+//  5. Auto-computed from the resolved project's public key
+//  6. Fallback to DefaultCDNBase
+func (l *Loader) ResolveCDNBase(creds *ProjectCredentials) string {
+	// Priorities 1-2: flag or env var override everything.
+	if l.cdnBaseFromFlagOrEnv() {
+		return l.v.GetString("cdn_base")
+	}
+	// Priority 3: per-project cdn_base from the projects map.
+	if creds != nil && creds.CDNBase != "" {
+		return creds.CDNBase
+	}
+	// Priority 4: top-level cdn_base in config file.
+	if v := l.v.GetString("cdn_base"); v != "" {
+		return v
+	}
+	// Priority 5: auto-computed from public key.
+	if creds != nil && creds.PublicKey != "" {
+		return ucare.CDNBaseURL(creds.PublicKey)
+	}
+	// Priority 6: legacy fallback.
+	return DefaultCDNBase
+}
+
+// cdnBaseFromFlagOrEnv reports whether cdn_base was explicitly provided
+// via a CLI flag or the UPLOADCARE_CDN_BASE environment variable.
+func (l *Loader) cdnBaseFromFlagOrEnv() bool {
+	return l.flagSet["cdn_base"] || os.Getenv("UPLOADCARE_CDN_BASE") != ""
 }
 
 // RequireProjectAPIToken returns an error if token is empty.

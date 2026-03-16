@@ -12,16 +12,70 @@ import (
 )
 
 func TestNewFileService(t *testing.T) {
-	svc, err := NewFileService("test-pub-key", "test-secret-key")
+	svc, err := NewFileService("test-pub-key", "test-secret-key", "")
 	if err != nil {
 		t.Fatalf("NewFileService failed: %v", err)
 	}
 	var _ service.FileService = svc
 }
 
+func TestNewFileService_WithCDNBase(t *testing.T) {
+	svc, err := NewFileService("test-pub-key", "test-secret-key", "https://custom.example.com")
+	if err != nil {
+		t.Fatalf("NewFileService with CDN base failed: %v", err)
+	}
+	var _ service.FileService = svc
+}
+
+func TestSetCDNURL_RewritesOriginalFileURL(t *testing.T) {
+	s := &fileService{cdnBase: "https://abc1234567.ucarecd.net"}
+	f := &service.File{
+		UUID:            "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		OriginalFileURL: "https://ucarecdn.com/a1b2c3d4-e5f6-7890-abcd-ef1234567890/",
+	}
+	s.setCDNURL(f)
+	want := "https://abc1234567.ucarecd.net/a1b2c3d4-e5f6-7890-abcd-ef1234567890/"
+	if f.OriginalFileURL != want {
+		t.Errorf("OriginalFileURL = %q, want %q", f.OriginalFileURL, want)
+	}
+}
+
+func TestSetCDNURL_NoOpWhenCDNBaseEmpty(t *testing.T) {
+	s := &fileService{cdnBase: ""}
+	f := &service.File{
+		UUID:            "a1b2c3d4",
+		OriginalFileURL: "https://ucarecdn.com/a1b2c3d4/",
+	}
+	s.setCDNURL(f)
+	if f.OriginalFileURL != "https://ucarecdn.com/a1b2c3d4/" {
+		t.Errorf("OriginalFileURL should be unchanged, got %q", f.OriginalFileURL)
+	}
+}
+
+func TestSetCDNURL_NoOpWhenDeletedFile(t *testing.T) {
+	s := &fileService{cdnBase: "https://abc1234567.ucarecd.net"}
+	f := &service.File{
+		UUID:            "a1b2c3d4",
+		OriginalFileURL: "", // API returns null for deleted files
+	}
+	s.setCDNURL(f)
+	if f.OriginalFileURL != "" {
+		t.Errorf("OriginalFileURL should remain empty for deleted file, got %q", f.OriginalFileURL)
+	}
+}
+
+func TestSetCDNURL_TrailingSlashNormalized(t *testing.T) {
+	s := &fileService{cdnBase: "https://custom.example.com/"}
+	f := &service.File{UUID: "abc123", OriginalFileURL: "https://ucarecdn.com/abc123/"}
+	s.setCDNURL(f)
+	if f.OriginalFileURL != "https://custom.example.com/abc123/" {
+		t.Errorf("OriginalFileURL = %q, want no double slash", f.OriginalFileURL)
+	}
+}
+
 func TestNewFileService_EmptyKeys(t *testing.T) {
 	// SDK validates credentials at client creation time.
-	_, err := NewFileService("", "")
+	_, err := NewFileService("", "", "")
 	if err == nil {
 		t.Fatal("expected error for empty credentials")
 	}
@@ -70,7 +124,7 @@ func TestMapFileInfo_ViaSDKTypes(t *testing.T) {
 	// the mapping function indirectly.
 
 	// Create a service and verify it implements the interface properly.
-	svc, err := NewFileService("test-pub", "test-secret")
+	svc, err := NewFileService("test-pub", "test-secret", "")
 	if err != nil {
 		t.Fatalf("NewFileService: %v", err)
 	}
@@ -83,7 +137,7 @@ func TestMapFileInfo_ViaSDKTypes(t *testing.T) {
 }
 
 func TestMapFileInfo_IncludeAppDataFlag(t *testing.T) {
-	svc, err := NewFileService("test-pub", "test-secret")
+	svc, err := NewFileService("test-pub", "test-secret", "")
 	if err != nil {
 		t.Fatalf("NewFileService: %v", err)
 	}
@@ -96,7 +150,7 @@ func TestMapFileInfo_IncludeAppDataFlag(t *testing.T) {
 }
 
 func TestList_InvalidStartingPoint(t *testing.T) {
-	svc, _ := NewFileService("pub", "sec")
+	svc, _ := NewFileService("pub", "sec", "")
 	_, err := svc.List(context.Background(), service.FileListOptions{
 		StartingPoint: "2026-03-01 12:00:00",
 	})
@@ -109,7 +163,7 @@ func TestList_InvalidStartingPoint(t *testing.T) {
 }
 
 func TestIterate_InvalidStartingPoint(t *testing.T) {
-	svc, _ := NewFileService("pub", "sec")
+	svc, _ := NewFileService("pub", "sec", "")
 	err := svc.Iterate(context.Background(), service.FileListOptions{
 		StartingPoint: "not-a-date",
 	}, func(f service.File) error {
@@ -127,7 +181,7 @@ func TestIterate_InvalidStartingPoint(t *testing.T) {
 func TestFileServiceInterface(t *testing.T) {
 	// Verify all interface methods exist by calling UploadFromURL with test credentials.
 	// It should fail with an API error (not a panic or compilation error).
-	svc, _ := NewFileService("pub", "sec")
+	svc, _ := NewFileService("pub", "sec", "")
 	ctx := context.Background()
 
 	_, err := svc.UploadFromURL(ctx, service.URLUploadParams{URL: "https://example.com/test.jpg"})

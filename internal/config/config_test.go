@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -380,7 +381,6 @@ func TestResolve_Defaults(t *testing.T) {
 
 	l.v.SetDefault("rest_api_base", DefaultRESTAPIBase)
 	l.v.SetDefault("upload_api_base", DefaultUploadAPIBase)
-	l.v.SetDefault("cdn_base", DefaultCDNBase)
 	l.v.SetDefault("project_api_base", DefaultProjectAPIBase)
 
 	cfg := l.Resolve()
@@ -391,11 +391,193 @@ func TestResolve_Defaults(t *testing.T) {
 	if cfg.UploadAPIBase != DefaultUploadAPIBase {
 		t.Errorf("UploadAPIBase = %q, want %q", cfg.UploadAPIBase, DefaultUploadAPIBase)
 	}
-	if cfg.CDNBase != DefaultCDNBase {
-		t.Errorf("CDNBase = %q, want %q", cfg.CDNBase, DefaultCDNBase)
+	if cfg.CDNBase != "" {
+		t.Errorf("CDNBase = %q, want empty (no viper default)", cfg.CDNBase)
 	}
 	if cfg.ProjectAPIBase != DefaultProjectAPIBase {
 		t.Errorf("ProjectAPIBase = %q, want %q", cfg.ProjectAPIBase, DefaultProjectAPIBase)
+	}
+}
+
+func TestResolveCDNBase_ExplicitValue(t *testing.T) {
+	l := newTestLoader(t, `
+cdn_base: "https://custom-cdn.example.com"
+`)
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "somepublickey"})
+	if got != "https://custom-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want explicit value", got)
+	}
+}
+
+func TestResolveCDNBase_ComputedFromPublicKey(t *testing.T) {
+	l := newTestLoader(t, "")
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"})
+	if got == "" || got == DefaultCDNBase {
+		t.Errorf("ResolveCDNBase = %q, want computed URL from public key", got)
+	}
+	if !strings.HasSuffix(got, ".ucarecd.net") {
+		t.Errorf("ResolveCDNBase = %q, want *.ucarecd.net domain", got)
+	}
+}
+
+func TestResolveCDNBase_FallbackNoPublicKey(t *testing.T) {
+	l := newTestLoader(t, "")
+	got := l.ResolveCDNBase(&ProjectCredentials{})
+	if got != DefaultCDNBase {
+		t.Errorf("ResolveCDNBase = %q, want %q", got, DefaultCDNBase)
+	}
+}
+
+func TestResolveCDNBase_FallbackNilCreds(t *testing.T) {
+	l := newTestLoader(t, "")
+	got := l.ResolveCDNBase(nil)
+	if got != DefaultCDNBase {
+		t.Errorf("ResolveCDNBase = %q, want %q", got, DefaultCDNBase)
+	}
+}
+
+func TestResolveCDNBase_ExplicitOverridesComputation(t *testing.T) {
+	l := newTestLoader(t, `
+cdn_base: "https://override.example.com"
+`)
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"})
+	if got != "https://override.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want explicit override", got)
+	}
+}
+
+func TestResolveCDNBase_EnvVar(t *testing.T) {
+	l := newTestLoader(t, "")
+	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
+	t.Setenv("UPLOADCARE_CDN_BASE", "https://env-cdn.example.com")
+
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"})
+	if got != "https://env-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want env value", got)
+	}
+}
+
+func TestResolveCDNBase_PerProjectOverridesAutoComputed(t *testing.T) {
+	l := newTestLoader(t, `
+default_project: "my app"
+projects:
+  "my app":
+    public_key: "proj-pub"
+    secret_key: "proj-sec"
+    cdn_base: "https://my-project-cdn.example.com"
+`)
+	creds, err := l.ResolveProjectCredentials()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := l.ResolveCDNBase(creds)
+	if got != "https://my-project-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want per-project cdn_base", got)
+	}
+}
+
+func TestResolveCDNBase_GlobalFallbackWhenProjectHasNoCDNBase(t *testing.T) {
+	l := newTestLoader(t, `
+cdn_base: "https://global-cdn.example.com"
+default_project: "my app"
+projects:
+  "my app":
+    public_key: "proj-pub"
+    secret_key: "proj-sec"
+`)
+	creds, err := l.ResolveProjectCredentials()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := l.ResolveCDNBase(creds)
+	if got != "https://global-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want global cdn_base", got)
+	}
+}
+
+func TestResolveCDNBase_PerProjectOverridesGlobal(t *testing.T) {
+	l := newTestLoader(t, `
+cdn_base: "https://global-cdn.example.com"
+default_project: "my app"
+projects:
+  "my app":
+    public_key: "proj-pub"
+    secret_key: "proj-sec"
+    cdn_base: "https://my-project-cdn.example.com"
+`)
+	creds, err := l.ResolveProjectCredentials()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := l.ResolveCDNBase(creds)
+	if got != "https://my-project-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want per-project cdn_base over global", got)
+	}
+}
+
+func TestResolveCDNBase_FlagOverridesPerProject(t *testing.T) {
+	l := newTestLoader(t, `
+default_project: "my app"
+projects:
+  "my app":
+    public_key: "proj-pub"
+    secret_key: "proj-sec"
+    cdn_base: "https://my-project-cdn.example.com"
+`)
+	// Simulate --cdn-base flag
+	l.v.Set("cdn_base", "https://flag-cdn.example.com")
+	l.flagSet["cdn_base"] = true
+
+	creds, err := l.ResolveProjectCredentials()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := l.ResolveCDNBase(creds)
+	if got != "https://flag-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want flag override", got)
+	}
+}
+
+func TestResolveCDNBase_EnvOverridesPerProject(t *testing.T) {
+	l := newTestLoader(t, `
+default_project: "my app"
+projects:
+  "my app":
+    public_key: "proj-pub"
+    secret_key: "proj-sec"
+    cdn_base: "https://my-project-cdn.example.com"
+`)
+	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
+	t.Setenv("UPLOADCARE_CDN_BASE", "https://env-cdn.example.com")
+
+	creds, err := l.ResolveProjectCredentials()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := l.ResolveCDNBase(creds)
+	if got != "https://env-cdn.example.com" {
+		t.Errorf("ResolveCDNBase = %q, want env override", got)
+	}
+}
+
+func TestResolveCDNBase_AutoComputedWhenNoProjectCDNBase(t *testing.T) {
+	l := newTestLoader(t, `
+default_project: "my app"
+projects:
+  "my app":
+    public_key: "demopublickey"
+    secret_key: "proj-sec"
+`)
+	creds, err := l.ResolveProjectCredentials()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := l.ResolveCDNBase(creds)
+	if got == "" || got == DefaultCDNBase {
+		t.Errorf("ResolveCDNBase = %q, want auto-computed URL", got)
+	}
+	if !strings.HasSuffix(got, ".ucarecd.net") {
+		t.Errorf("ResolveCDNBase = %q, want *.ucarecd.net domain", got)
 	}
 }
 

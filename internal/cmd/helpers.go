@@ -42,7 +42,8 @@ func fileServiceFromCmd(cmd *cobra.Command) (service.FileService, error) {
 		return nil, &ExitError{Code: 3, Err: err}
 	}
 
-	svc, err := client.NewFileService(creds.PublicKey, creds.SecretKey)
+	cdnBase := loader.ResolveCDNBase(creds)
+	svc, err := client.NewFileService(creds.PublicKey, creds.SecretKey, cdnBase)
 	if err != nil {
 		return nil, &ExitError{Code: 1, Err: err}
 	}
