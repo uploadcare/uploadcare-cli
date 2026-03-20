@@ -128,7 +128,7 @@ func runGroupListAll(cmd *cobra.Command, svc service.GroupService, listOpts serv
 	w := cmd.OutOrStdout()
 	return svc.Iterate(cmd.Context(), listOpts, func(g service.Group) error {
 		if opts.JSON {
-			return output.NDJSONLine(w, &g, opts.Fields)
+			return output.NDJSONLine(w, &g, opts.Fields, opts.JQ)
 		}
 		stored := ""
 		if g.DatetimeStored != nil {

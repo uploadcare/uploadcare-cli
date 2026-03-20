@@ -205,10 +205,10 @@ func TestNDJSONLine(t *testing.T) {
 
 	fields := []string{"uuid"}
 
-	if err := NDJSONLine(&buf, data1, fields); err != nil {
+	if err := NDJSONLine(&buf, data1, fields, ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if err := NDJSONLine(&buf, data2, fields); err != nil {
+	if err := NDJSONLine(&buf, data2, fields, ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -235,7 +235,7 @@ func TestNDJSONLine_NoFields(t *testing.T) {
 	var buf bytes.Buffer
 	data := map[string]any{"uuid": "a", "size": 1}
 
-	if err := NDJSONLine(&buf, data, nil); err != nil {
+	if err := NDJSONLine(&buf, data, nil, ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 

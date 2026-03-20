@@ -231,7 +231,7 @@ func runFileListAll(cmd *cobra.Command, svc service.FileService, listOpts servic
 	w := cmd.OutOrStdout()
 	return svc.Iterate(cmd.Context(), listOpts, func(f service.File) error {
 		if opts.JSON {
-			return output.NDJSONLine(w, &f, opts.Fields)
+			return output.NDJSONLine(w, &f, opts.Fields, opts.JQ)
 		}
 		_, err := fmt.Fprintf(w, "%s\t%d\t%s\t%v\t%s\n",
 			f.UUID, f.Size, f.Filename, f.IsStored, formatTime(f.DatetimeUploaded))

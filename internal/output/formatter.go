@@ -51,7 +51,7 @@ func New(opts FormatOptions) Formatter {
 		return &quietFormatter{}
 	}
 	if opts.JSON || opts.JQ != "" {
-		return &JSONFormatter{Fields: opts.Fields}
+		return &JSONFormatter{Fields: opts.Fields, JQ: opts.JQ}
 	}
 	return &TableFormatter{}
 }
