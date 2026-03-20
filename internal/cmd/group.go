@@ -14,6 +14,13 @@ func newGroupCmd(groupSvc service.GroupService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "group",
 		Short: "Manage file groups",
+		Long: `Manage file groups in the current Uploadcare project.
+
+A file group is an ordered collection of files referenced by a single
+group ID (format: <uuid>~<count>). Groups are useful for multi-file
+uploads and batch operations.
+
+Subcommands: list, info, create, delete.`,
 	}
 
 	cmd.AddCommand(newGroupListCmd(groupSvc))
@@ -35,7 +42,24 @@ func newGroupListCmd(groupSvc service.GroupService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List file groups",
-		Args:  cobra.NoArgs,
+		Long: `List file groups in the current Uploadcare project with pagination.
+
+Returns groups sorted by --ordering (default: datetime_created ascending).
+Prefix the ordering field with - for descending (e.g., -datetime_created).
+
+By default returns one page of up to --limit groups (default: 100).
+Use --page-all to stream ALL groups as NDJSON (one JSON object per line).
+
+JSON fields: id, files_count, datetime_created, datetime_stored, cdn_url, url.`,
+		Example: `  # List groups as JSON
+  uploadcare group list --json
+
+  # List groups, newest first
+  uploadcare group list --ordering -datetime_created --json
+
+  # Stream all group IDs
+  uploadcare group list --page-all --json id`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc := groupSvc
 			if svc == nil {
@@ -120,7 +144,18 @@ func newGroupInfoCmd(groupSvc service.GroupService) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info <group-id>",
 		Short: "Get group details",
-		Args:  cobra.ExactArgs(1),
+		Long: `Get detailed information about a file group by its group ID.
+
+The group ID format is <uuid>~<count> (e.g. 740e1b8c-...~3).
+
+JSON fields: id, files_count, datetime_created, datetime_stored,
+cdn_url, url, files (array of file objects).`,
+		Example: `  # Get group info
+  uploadcare group info "740e1b8c-1ad8-4324-b7ec-112345678900~3"
+
+  # Get group info as JSON
+  uploadcare group info "740e1b8c-1ad8-4324-b7ec-112345678900~3" --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			groupID := args[0]
 			if err := validate.GroupID(groupID); err != nil {
@@ -173,7 +208,27 @@ func newGroupCreateCmd(groupSvc service.GroupService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <uuid>...",
 		Short: "Create a file group",
-		Args:  cobra.ArbitraryArgs,
+		Long: `Create a new file group from one or more file UUIDs.
+
+Accepts UUIDs as positional arguments, from stdin (--from-stdin), or both.
+All UUIDs are validated before creating the group.
+
+Use --dry-run to validate UUIDs and preview the operation without creating.
+
+JSON fields: id, files_count, datetime_created, cdn_url.`,
+		Example: `  # Create a group from specific files
+  uploadcare group create UUID1 UUID2 UUID3
+
+  # Create a group from piped UUIDs
+  uploadcare file list --page-all --stored true --json uuid \
+    | head -5 | uploadcare group create --from-stdin
+
+  # Create a group and get JSON output
+  uploadcare group create UUID1 UUID2 --json
+
+  # Dry run: validate without creating
+  uploadcare group create UUID1 UUID2 --dry-run`,
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc := groupSvc
 			if svc == nil {
@@ -243,7 +298,23 @@ func newGroupDeleteCmd(groupSvc service.GroupService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <group-id>",
 		Short: "Delete a file group",
-		Args:  cobra.ExactArgs(1),
+		Long: `Delete a file group by its group ID.
+
+Deleting a group does NOT delete the files within it — they remain in the
+project. Only the grouping is removed.
+
+Use --dry-run to verify the group exists and see its details without deleting.
+
+JSON fields: id, status.`,
+		Example: `  # Delete a group
+  uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3"
+
+  # Delete and confirm with JSON
+  uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3" --json
+
+  # Dry run: verify group exists
+  uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3" --dry-run`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			groupID := args[0]
 			if err := validate.GroupID(groupID); err != nil {

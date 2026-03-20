@@ -45,6 +45,16 @@ func newAddonCmd(addonSvc service.AddonService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "addon",
 		Short: "Execute add-ons",
+		Long: `Execute and monitor Uploadcare add-ons on files.
+
+Available add-ons:
+  aws-rekognition-detect-labels              Image labeling (AWS Rekognition)
+  aws-rekognition-detect-moderation-labels   Content moderation (AWS Rekognition)
+  remove-bg                                  Background removal
+  uc-clamav-virus-scan                       Virus scanning (ClamAV)
+
+Add-on names accept both CLI-style (hyphenated) and SDK-style (underscored)
+formats. Subcommands: execute, status.`,
 	}
 
 	cmd.AddCommand(newAddonExecuteCmd(addonSvc))
@@ -64,7 +74,39 @@ func newAddonExecuteCmd(addonSvc service.AddonService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "execute <addon-name> <file-uuid>",
 		Short: "Execute an add-on on a file",
-		Args:  cobra.ExactArgs(2),
+		Long: `Execute an add-on on a specific file.
+
+The add-on name and file UUID are both required as positional arguments.
+Use --params to pass add-on-specific parameters as a JSON string.
+
+By default waits for the add-on to complete (polling every 2s, up to
+--timeout, default 5m). Use --no-wait to return the request ID immediately
+and check status later with "addon status".
+
+Use --dry-run to validate parameters without executing.
+
+JSON fields (with --no-wait): request_id.
+JSON fields (after completion): status, result.`,
+		Example: `  # Run virus scan on a file
+  uploadcare addon execute uc-clamav-virus-scan 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # Run image labeling
+  uploadcare addon execute aws-rekognition-detect-labels 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # Run background removal with JSON output
+  uploadcare addon execute remove-bg 740e1b8c-1ad8-4324-b7ec-112345678900 --json
+
+  # Execute without waiting, get request ID
+  uploadcare addon execute uc-clamav-virus-scan 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --no-wait --json
+
+  # Execute with custom parameters
+  uploadcare addon execute aws-rekognition-detect-labels 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --params '{"max_labels": 5}'
+
+  # Dry run: validate without executing
+  uploadcare addon execute uc-clamav-virus-scan 740e1b8c-1ad8-4324-b7ec-112345678900 --dry-run`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addonName, fileUUID := args[0], args[1]
 
@@ -152,7 +194,18 @@ func newAddonStatusCmd(addonSvc service.AddonService) *cobra.Command {
 	return &cobra.Command{
 		Use:   "status <addon-name> <request-id>",
 		Short: "Check add-on execution status",
-		Args:  cobra.ExactArgs(2),
+		Long: `Check the status of a previously started add-on execution.
+
+Requires the add-on name and the request ID returned by "addon execute --no-wait".
+Status values: in_progress, done, error.
+
+JSON fields: status, result (when done).`,
+		Example: `  # Check status of a virus scan
+  uploadcare addon status uc-clamav-virus-scan req-12345-abcde
+
+  # Check status as JSON
+  uploadcare addon status uc-clamav-virus-scan req-12345-abcde --json`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addonName, requestID := args[0], args[1]
 

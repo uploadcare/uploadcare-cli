@@ -22,7 +22,37 @@ func newFileStoreCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "store <uuid>...",
 		Short: "Store files",
-		Args:  cobra.ArbitraryArgs,
+		Long: `Mark one or more files as permanently stored.
+
+Stored files are not auto-deleted and persist until explicitly removed.
+Accepts UUIDs as positional arguments, from stdin (--from-stdin), or both.
+Duplicates are automatically removed.
+
+Files are processed in batches of 100. The result includes both
+successfully stored files and any problems (e.g. not found).
+
+Use --dry-run to look up each file and show what would happen
+without actually storing anything.
+
+JSON fields: files (array of file objects), problems (map of uuid to error).
+
+Exit codes:
+  0  All files stored successfully
+  1  Some files had problems (partial success)
+  2  Usage error (bad UUID format, no input)`,
+		Example: `  # Store specific files
+  uploadcare file store 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # Store multiple files
+  uploadcare file store UUID1 UUID2 UUID3
+
+  # Pipe from file list: store all unstored files
+  uploadcare file list --page-all --stored false --json uuid \
+    | uploadcare file store --from-stdin
+
+  # Dry run: check which files would be stored
+  uploadcare file store UUID1 UUID2 --dry-run --json`,
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBatchCommand(cmd, args, fileSvc, fromStdin, dryRun, "store")
 		},
@@ -43,7 +73,36 @@ func newFileDeleteCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <uuid>...",
 		Short: "Delete files",
-		Args:  cobra.ArbitraryArgs,
+		Long: `Delete one or more files from the current Uploadcare project.
+
+Accepts UUIDs as positional arguments, from stdin (--from-stdin), or both.
+Duplicates are automatically removed.
+
+Files are processed in batches of 100. The result includes both
+successfully deleted files and any problems (e.g. not found).
+
+Use --dry-run to look up each file and show what would happen
+without actually deleting anything.
+
+JSON fields: files (array of file objects), problems (map of uuid to error).
+
+Exit codes:
+  0  All files deleted successfully
+  1  Some files had problems (partial success)
+  2  Usage error (bad UUID format, no input)`,
+		Example: `  # Delete a specific file
+  uploadcare file delete 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # Delete multiple files
+  uploadcare file delete UUID1 UUID2 UUID3
+
+  # Pipe from file list: delete all unstored files
+  uploadcare file list --page-all --stored false --json uuid \
+    | uploadcare file delete --from-stdin
+
+  # Dry run: check which files would be deleted
+  uploadcare file delete UUID1 UUID2 --dry-run --json`,
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBatchCommand(cmd, args, fileSvc, fromStdin, dryRun, "delete")
 		},

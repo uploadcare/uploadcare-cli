@@ -19,7 +19,24 @@ func newFileLocalCopyCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "local-copy <uuid>",
 		Short: "Copy file within Uploadcare storage",
-		Args:  cobra.ExactArgs(1),
+		Long: `Create a copy of a file within Uploadcare's own storage.
+
+The new copy gets its own UUID and is independent of the original.
+Use --store to immediately mark the copy as permanently stored.
+
+Use --dry-run to verify the source file exists without copying.
+
+JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
+is_ready, datetime_uploaded, original_file_url.`,
+		Example: `  # Copy a file locally
+  uploadcare file local-copy 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # Copy and store immediately
+  uploadcare file local-copy 740e1b8c-1ad8-4324-b7ec-112345678900 --store
+
+  # Dry run: verify the source file exists
+  uploadcare file local-copy 740e1b8c-1ad8-4324-b7ec-112345678900 --dry-run --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
 			if err := validate.UUID(uuid); err != nil {
@@ -92,7 +109,32 @@ func newFileRemoteCopyCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remote-copy <uuid>",
 		Short: "Copy file to remote storage",
-		Args:  cobra.ExactArgs(1),
+		Long: `Copy a file from Uploadcare to an external (remote) storage bucket.
+
+The --target flag is required and must be the name of a remote storage
+configured in your Uploadcare project settings (e.g. an S3 bucket name).
+
+Use --make-public to set public ACL on the remote copy.
+Use --pattern to customize the filename on the remote storage.
+
+Use --dry-run to verify the source file exists without copying.
+
+JSON fields: result (remote URL or identifier), already_exists (bool).`,
+		Example: `  # Copy a file to remote storage
+  uploadcare file remote-copy 740e1b8c-1ad8-4324-b7ec-112345678900 --target my-s3-bucket
+
+  # Copy and make public
+  uploadcare file remote-copy 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --target my-s3-bucket --make-public
+
+  # Copy with custom filename pattern
+  uploadcare file remote-copy 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --target my-s3-bucket --pattern "${uuid}/${filename}"
+
+  # Dry run: verify the source file exists
+  uploadcare file remote-copy 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --target my-s3-bucket --dry-run --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
 			if err := validate.UUID(uuid); err != nil {

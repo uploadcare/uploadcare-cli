@@ -35,7 +35,47 @@ func newFileUploadCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upload <path>...",
 		Short: "Upload files",
-		Args:  cobra.ArbitraryArgs,
+		Long: `Upload one or more local files to the current Uploadcare project.
+
+Accepts file paths as positional arguments, from stdin (--from-stdin),
+or both. Content type is auto-detected from file headers.
+
+Upload method is selected automatically based on file size:
+  Direct upload     Files smaller than --multipart-threshold (default 10 MB)
+  Multipart upload  Files at or above the threshold
+Override with --force-direct or --force-multipart (mutually exclusive).
+
+The --store flag controls file storage behavior:
+  auto   Use the project's auto-store setting (default)
+  true   Store the file immediately
+  false  Leave the file unstored (auto-deleted after 24h)
+
+Attach metadata at upload time with --metadata key=value (repeatable).
+Use --dry-run to validate files without actually uploading.
+Use --progress to show upload progress on stderr.
+
+Returns a single JSON object for one file, or an array for multiple files.
+
+JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
+is_ready, datetime_uploaded, original_file_url, metadata.`,
+		Example: `  # Upload a single file
+  uploadcare file upload photo.jpg
+
+  # Upload and immediately store
+  uploadcare file upload photo.jpg --store true
+
+  # Upload with metadata
+  uploadcare file upload photo.jpg --metadata source=camera --metadata project=vacation
+
+  # Upload multiple files, get JSON output
+  uploadcare file upload *.jpg --json uuid,filename,size
+
+  # Dry run: validate without uploading
+  uploadcare file upload photo.jpg --dry-run --json
+
+  # Upload file paths read from stdin
+  find ./images -name '*.png' | uploadcare file upload --from-stdin --json uuid`,
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if forceMultipart && forceDirect {
 				return ExitErrorf(2, "--force-multipart and --force-direct are mutually exclusive")

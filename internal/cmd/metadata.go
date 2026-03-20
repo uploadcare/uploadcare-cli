@@ -13,6 +13,14 @@ func newMetadataCmd(metaSvc service.MetadataService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "metadata",
 		Short: "Manage file metadata",
+		Long: `Manage custom key-value metadata attached to files.
+
+Metadata is a flat string-to-string map stored on each file. Keys must
+start with a letter and contain only lowercase letters, digits, and
+hyphens (max 64 chars). Values are strings (max 512 chars).
+
+Subcommands: list, get, set, delete. All require a file UUID as the
+first argument. Use --json for structured output, --dry-run for safe previews.`,
 	}
 
 	cmd.AddCommand(newMetadataListCmd(metaSvc))
@@ -27,7 +35,16 @@ func newMetadataListCmd(metaSvc service.MetadataService) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list <file-uuid>",
 		Short: "List all metadata for a file",
-		Args:  cobra.ExactArgs(1),
+		Long: `List all metadata key-value pairs attached to a file.
+
+Returns a table of keys and values, or a JSON object (map) when --json
+is specified. Returns "No metadata found" when the file has no metadata.`,
+		Example: `  # List metadata as a table
+  uploadcare metadata list 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # List metadata as JSON
+  uploadcare metadata list 740e1b8c-1ad8-4324-b7ec-112345678900 --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
 			if err := validate.UUID(uuid); err != nil {
@@ -73,7 +90,16 @@ func newMetadataGetCmd(metaSvc service.MetadataService) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <file-uuid> <key>",
 		Short: "Get a metadata value",
-		Args:  cobra.ExactArgs(2),
+		Long: `Get the value of a single metadata key on a file.
+
+Prints the value as plain text, or as a JSON object with "key" and "value"
+fields when --json is specified. Returns an error if the key does not exist.`,
+		Example: `  # Get a metadata value
+  uploadcare metadata get 740e1b8c-1ad8-4324-b7ec-112345678900 source
+
+  # Get as JSON
+  uploadcare metadata get 740e1b8c-1ad8-4324-b7ec-112345678900 source --json`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid, key := args[0], args[1]
 			if err := validate.UUID(uuid); err != nil {
@@ -119,7 +145,23 @@ func newMetadataSetCmd(metaSvc service.MetadataService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set <file-uuid> <key> <value>",
 		Short: "Set a metadata key-value pair",
-		Args:  cobra.ExactArgs(3),
+		Long: `Set a metadata key-value pair on a file. Creates the key if it does
+not exist, or overwrites the existing value.
+
+Use --dry-run to preview the change: shows the current value (if any)
+and the new value without applying.
+
+JSON fields (--json): key, value. With --dry-run: key, current_value,
+new_value, status.`,
+		Example: `  # Set a metadata value
+  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera
+
+  # Set and confirm with JSON
+  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera --json
+
+  # Dry run: preview the change
+  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera --dry-run --json`,
+		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid, key, value := args[0], args[1], args[2]
 			if err := validate.UUID(uuid); err != nil {
@@ -188,7 +230,21 @@ func newMetadataDeleteCmd(metaSvc service.MetadataService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <file-uuid> <key>",
 		Short: "Delete a metadata key",
-		Args:  cobra.ExactArgs(2),
+		Long: `Delete a metadata key from a file.
+
+Returns an error if the key does not exist. Use --dry-run to verify the
+key exists and see its current value without deleting.
+
+JSON fields (--json): key, status. With --dry-run: key, value, status.`,
+		Example: `  # Delete a metadata key
+  uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source
+
+  # Delete and confirm with JSON
+  uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source --json
+
+  # Dry run: verify the key exists first
+  uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source --dry-run`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid, key := args[0], args[1]
 			if err := validate.UUID(uuid); err != nil {

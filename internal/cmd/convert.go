@@ -15,6 +15,13 @@ func newConvertCmd(convertSvc service.ConvertService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "convert",
 		Short: "Convert documents and videos",
+		Long: `Convert documents and videos stored in Uploadcare.
+
+Conversions are asynchronous. By default the CLI polls for completion
+(every 2s, up to --timeout). Use --no-wait to return the conversion
+token immediately and check status later.
+
+Subcommands: document, video.`,
 	}
 
 	cmd.AddCommand(newConvertDocumentCmd(convertSvc))
@@ -37,7 +44,37 @@ func newConvertDocumentCmd(convertSvc service.ConvertService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "document <uuid>",
 		Short: "Convert a document",
-		Args:  cobra.ExactArgs(1),
+		Long: `Convert a document file to another format.
+
+The --format flag is required and specifies the target format
+(e.g. pdf, doc, docx, txt, odt, rtf, html, etc.).
+
+Use --page to extract a specific page from multi-page documents.
+Use --save-in-group to save multi-page results as a file group.
+Use --store to permanently store the converted file.
+
+By default waits for conversion to complete (polling every 2s, up to
+--timeout). Use --no-wait to return the conversion token immediately.
+
+Use --dry-run to validate parameters without converting.
+
+JSON fields (with --no-wait): token, uuid.
+JSON fields (after completion): status, result.`,
+		Example: `  # Convert a document to PDF
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf
+
+  # Convert and store the result
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --store
+
+  # Extract page 3 as an image
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format png --page 3
+
+  # Start conversion without waiting
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --no-wait --json
+
+  # Dry run: validate parameters
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --dry-run --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
 			if err := validate.UUID(uuid); err != nil {
@@ -141,7 +178,47 @@ func newConvertVideoCmd(convertSvc service.ConvertService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "video <uuid>",
 		Short: "Convert a video",
-		Args:  cobra.ExactArgs(1),
+		Long: `Convert a video file with optional format, size, quality, and cutting.
+
+All flags are optional. Common target formats: mp4, webm, ogg.
+
+Resize options:
+  --size WxH           Target dimensions (e.g. 640x480)
+  --resize-mode MODE   How to resize: preserve_ratio, change_ratio,
+                       scale_crop, add_padding
+
+Quality options: normal, better, best, lighter, lightest.
+
+Cut option: --cut START/END in HHH:MM:SS.mmm format
+  (e.g. 000:00:05.000/000:00:15.000 for a 10-second clip).
+
+Use --thumbs N to generate N thumbnail images from the video.
+Use --store to permanently store the converted file.
+
+By default waits for conversion to complete (polling every 2s, up to
+--timeout). Use --no-wait to return the conversion token immediately.
+
+Use --dry-run to validate parameters without converting.
+
+JSON fields (with --no-wait): token, uuid.
+JSON fields (after completion): status, result.`,
+		Example: `  # Convert video to mp4
+  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 --format mp4
+
+  # Convert with resize and quality
+  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --format mp4 --size 1280x720 --quality better
+
+  # Cut a 10-second clip
+  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 \
+    --format mp4 --cut 000:00:05.000/000:00:15.000
+
+  # Generate 5 thumbnails
+  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 --thumbs 5
+
+  # Start conversion without waiting
+  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 --format mp4 --no-wait --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
 			if err := validate.UUID(uuid); err != nil {

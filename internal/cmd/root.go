@@ -12,6 +12,30 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "uploadcare",
 		Short:         "Uploadcare CLI — manage files, projects, and more",
+		Long: `Uploadcare CLI — manage files, projects, and more from the command line.
+
+Authenticate using API keys (flags, env vars, or config file):
+  --public-key / UPLOADCARE_PUBLIC_KEY
+  --secret-key / UPLOADCARE_SECRET_KEY
+Or use a named project from ~/.config/uploadcare/cli.yaml:
+  --project <name> / UPLOADCARE_PROJECT
+
+Output modes:
+  (default)    Human-readable tables
+  --json       Full JSON objects (one per result)
+  --json <f>   JSON with only the listed fields (comma-separated)
+  --jq <expr>  Apply a jq expression to the JSON output (implies --json)
+  --quiet      Suppress all non-error output
+  --verbose    Print HTTP request/response details to stderr
+
+Exit codes:
+  0  Success
+  1  API/runtime error
+  2  Usage error (bad arguments, invalid flags)
+  3  Auth/config error (missing or invalid credentials)
+
+Use "uploadcare <command> --help" for details on any command.
+Use "uploadcare api-schema" for machine-readable command metadata.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

@@ -30,6 +30,13 @@ func newWebhookCmd(webhookSvc service.WebhookService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "webhook",
 		Short: "Manage webhooks",
+		Long: `Manage webhooks for the current Uploadcare project.
+
+Webhooks deliver HTTP POST notifications to your endpoint when events
+occur. Valid events: file.uploaded, file.stored, file.deleted,
+file.info_updated.
+
+Subcommands: list, create, update, delete.`,
 	}
 
 	cmd.AddCommand(newWebhookListCmd(webhookSvc))
@@ -44,7 +51,21 @@ func newWebhookListCmd(webhookSvc service.WebhookService) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List all webhooks",
-		Args:  cobra.NoArgs,
+		Long: `List all webhooks configured for the current project.
+
+Returns all webhooks in a single response (no pagination).
+
+JSON fields: id, target_url, event, is_active, signing_secret,
+datetime_created, datetime_updated.`,
+		Example: `  # List webhooks as a table
+  uploadcare webhook list
+
+  # List webhooks as JSON
+  uploadcare webhook list --json
+
+  # Get only webhook IDs and URLs
+  uploadcare webhook list --json id,target_url`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc := webhookSvc
 			if svc == nil {
@@ -93,7 +114,33 @@ func newWebhookCreateCmd(webhookSvc service.WebhookService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <target-url>",
 		Short: "Create a webhook",
-		Args:  cobra.ExactArgs(1),
+		Long: `Create a new webhook for the current project.
+
+The target URL receives HTTP POST notifications when the specified event
+occurs. The URL must be valid and publicly accessible.
+
+Defaults: --event file.uploaded, --active true.
+
+Valid events: file.uploaded, file.stored, file.deleted, file.info_updated.
+
+Use --signing-secret to set a secret for HMAC-SHA256 webhook verification.
+Use --dry-run to validate parameters without creating.
+
+JSON fields: id, target_url, event, is_active, signing_secret,
+datetime_created.`,
+		Example: `  # Create a webhook for file uploads
+  uploadcare webhook create https://example.com/hooks/upload
+
+  # Create a webhook for file deletions
+  uploadcare webhook create https://example.com/hooks/delete --event file.deleted
+
+  # Create an inactive webhook with a signing secret
+  uploadcare webhook create https://example.com/hooks/upload \
+    --active=false --signing-secret my-secret
+
+  # Dry run: validate without creating
+  uploadcare webhook create https://example.com/hooks/upload --dry-run --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetURL := args[0]
 			if err := validate.URL(targetURL); err != nil {
@@ -175,7 +222,31 @@ func newWebhookUpdateCmd(webhookSvc service.WebhookService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <webhook-id>",
 		Short: "Update a webhook",
-		Args:  cobra.ExactArgs(1),
+		Long: `Update an existing webhook by its numeric ID.
+
+Only the flags you provide are changed — omitted flags leave the
+current value unchanged. The webhook ID is a numeric integer
+(shown in "webhook list" output).
+
+Valid events: file.uploaded, file.stored, file.deleted, file.info_updated.
+
+The --active flag accepts "true" or "false" as a string value.
+Use --dry-run to validate parameters without applying changes.
+
+JSON fields: id, target_url, event, is_active, signing_secret,
+datetime_created, datetime_updated.`,
+		Example: `  # Change the target URL
+  uploadcare webhook update 12345 --target-url https://example.com/new-hook
+
+  # Disable a webhook
+  uploadcare webhook update 12345 --active false
+
+  # Change event type and re-enable
+  uploadcare webhook update 12345 --event file.stored --active true
+
+  # Dry run: validate without applying
+  uploadcare webhook update 12345 --target-url https://example.com/new --dry-run --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
 			if _, err := strconv.ParseInt(id, 10, 64); err != nil {
@@ -264,7 +335,21 @@ func newWebhookDeleteCmd(webhookSvc service.WebhookService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <webhook-id>",
 		Short: "Delete a webhook",
-		Args:  cobra.ExactArgs(1),
+		Long: `Delete a webhook by its numeric ID.
+
+The webhook ID is a numeric integer (shown in "webhook list" output).
+Use --dry-run to validate the ID without deleting.
+
+JSON fields: id, status.`,
+		Example: `  # Delete a webhook
+  uploadcare webhook delete 12345
+
+  # Delete and confirm with JSON
+  uploadcare webhook delete 12345 --json
+
+  # Dry run: validate without deleting
+  uploadcare webhook delete 12345 --dry-run`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
 			if _, err := strconv.ParseInt(id, 10, 64); err != nil {

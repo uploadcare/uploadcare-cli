@@ -15,6 +15,14 @@ func newFileCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "file",
 		Short: "Manage files",
+		Long: `Manage files in the current Uploadcare project.
+
+Subcommands cover the full file lifecycle: upload, list, inspect,
+store, delete, and copy. Most subcommands support --json for
+structured output and --dry-run for safe previews.
+
+Batch operations (store, delete) accept UUIDs from arguments or
+stdin (--from-stdin), and can be piped from "file list --page-all".`,
 	}
 
 	cmd.AddCommand(newFileInfoCmd(fileSvc))
@@ -35,7 +43,28 @@ func newFileInfoCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "info <uuid>",
 		Short: "Get file details",
-		Args:  cobra.ExactArgs(1),
+		Long: `Get detailed information about a single file by its UUID.
+
+Returns metadata including size, MIME type, stored/ready status,
+upload and storage timestamps, and the original file URL.
+Use --include-appdata to also return application-specific data
+(e.g. add-on results attached to the file).
+
+JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
+is_ready, datetime_uploaded, datetime_stored, datetime_removed,
+original_file_url, metadata, appdata (with --include-appdata).`,
+		Example: `  # Get file info as a table
+  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900
+
+  # Get file info as JSON
+  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --json
+
+  # Get only the URL and size
+  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --json original_file_url,size
+
+  # Include appdata (e.g. virus scan results)
+  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --include-appdata --json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
 			if err := validate.UUID(uuid); err != nil {
@@ -86,7 +115,38 @@ func newFileListCmd(fileSvc service.FileService) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List files in project",
-		Args:  cobra.NoArgs,
+		Long: `List files in the current Uploadcare project with pagination and filtering.
+
+Returns files sorted by --ordering (default: datetime_uploaded ascending).
+Prefix the ordering field with - for descending (e.g., -datetime_uploaded).
+
+By default returns one page of up to --limit files (default: 100).
+Use --page-all to stream ALL files as NDJSON (one JSON object per line).
+
+The --stored flag is a tristate filter:
+  --stored true    Only stored files
+  --stored false   Only unstored files
+  (omitted)        All files regardless of stored status
+
+JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
+is_ready, datetime_uploaded, datetime_stored, datetime_removed,
+original_file_url, metadata, appdata (with --include-appdata).`,
+		Example: `  # List first 100 files as JSON
+  uploadcare file list --json
+
+  # List only stored files, newest first, specific fields
+  uploadcare file list --stored true --ordering -datetime_uploaded --json uuid,size,filename
+
+  # Stream ALL file UUIDs (for piping to other commands)
+  uploadcare file list --page-all --json uuid
+
+  # Delete all unstored files
+  uploadcare file list --page-all --stored false --json uuid \
+    | uploadcare file delete --from-stdin
+
+  # Count all files in the project
+  uploadcare file list --page-all --json uuid | wc -l`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc := fileSvc
 			if svc == nil {
