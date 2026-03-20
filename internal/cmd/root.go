@@ -57,6 +57,11 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	// Subcommands
 	rootCmd.AddCommand(newVersionCmd(version, commit, date))
 	rootCmd.AddCommand(newFileCmd(nil))
+	rootCmd.AddCommand(newMetadataCmd(nil))
+	rootCmd.AddCommand(newGroupCmd(nil))
+	rootCmd.AddCommand(newWebhookCmd(nil))
+	rootCmd.AddCommand(newConvertCmd(nil))
+	rootCmd.AddCommand(newAddonCmd(nil))
 
 	return rootCmd
 }

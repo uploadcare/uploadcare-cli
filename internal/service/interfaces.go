@@ -301,6 +301,7 @@ type MetadataService interface {
 // GroupService provides file group operations.
 type GroupService interface {
 	List(ctx context.Context, opts GroupListOptions) (*GroupListResult, error)
+	Iterate(ctx context.Context, opts GroupListOptions, fn func(Group) error) error
 	Info(ctx context.Context, groupID string) (*Group, error)
 	Create(ctx context.Context, uuids []string) (*Group, error)
 	Delete(ctx context.Context, groupID string) error

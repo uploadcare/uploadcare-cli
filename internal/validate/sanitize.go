@@ -27,6 +27,9 @@ const (
 // uuidRe matches a canonical lowercase UUID.
 var uuidRe = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
+// groupIDRe matches a group ID in the form UUID~N.
+var groupIDRe = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}~\d+$`)
+
 // doubleEncodedRe detects common double-URL-encoding patterns like %25XX.
 var doubleEncodedRe = regexp.MustCompile(`%25[0-9A-Fa-f]{2}`)
 
@@ -49,6 +52,14 @@ func ValidateString(s string) error {
 func UUID(s string) error {
 	if !uuidRe.MatchString(s) {
 		return fmt.Errorf("%w: %q", ErrInvalidUUID, s)
+	}
+	return nil
+}
+
+// GroupID validates that s is a well-formed group ID (UUID~N format).
+func GroupID(s string) error {
+	if !groupIDRe.MatchString(s) {
+		return fmt.Errorf("invalid group ID format %q (expected UUID~N, e.g. d52d7136-a2e5-4338-9f45-affbf83b857d~3)", s)
 	}
 	return nil
 }

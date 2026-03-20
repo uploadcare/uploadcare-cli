@@ -55,6 +55,136 @@ func fileServiceFromCmd(cmd *cobra.Command) (service.FileService, error) {
 	return svc, nil
 }
 
+// metadataServiceFromCmd resolves credentials and creates a MetadataService.
+func metadataServiceFromCmd(cmd *cobra.Command) (service.MetadataService, error) {
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	creds, err := loader.ResolveProjectCredentials(verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	if err := creds.RequireBoth(); err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	httpClient := client.NewVerboseHTTPClient(verbose)
+	svc, err := client.NewMetadataService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 1, Err: err}
+	}
+	return svc, nil
+}
+
+// groupServiceFromCmd resolves credentials and creates a GroupService.
+func groupServiceFromCmd(cmd *cobra.Command) (service.GroupService, error) {
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	creds, err := loader.ResolveProjectCredentials(verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	if err := creds.RequireBoth(); err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	httpClient := client.NewVerboseHTTPClient(verbose)
+	svc, err := client.NewGroupService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 1, Err: err}
+	}
+	return svc, nil
+}
+
+// webhookServiceFromCmd resolves credentials and creates a WebhookService.
+func webhookServiceFromCmd(cmd *cobra.Command) (service.WebhookService, error) {
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	creds, err := loader.ResolveProjectCredentials(verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	if err := creds.RequireBoth(); err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	httpClient := client.NewVerboseHTTPClient(verbose)
+	svc, err := client.NewWebhookService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 1, Err: err}
+	}
+	return svc, nil
+}
+
+// convertServiceFromCmd resolves credentials and creates a ConvertService.
+func convertServiceFromCmd(cmd *cobra.Command) (service.ConvertService, error) {
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	creds, err := loader.ResolveProjectCredentials(verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	if err := creds.RequireBoth(); err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	httpClient := client.NewVerboseHTTPClient(verbose)
+	svc, err := client.NewConvertService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 1, Err: err}
+	}
+	return svc, nil
+}
+
+// addonServiceFromCmd resolves credentials and creates an AddonService.
+func addonServiceFromCmd(cmd *cobra.Command) (service.AddonService, error) {
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	creds, err := loader.ResolveProjectCredentials(verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	if err := creds.RequireBoth(); err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	httpClient := client.NewVerboseHTTPClient(verbose)
+	svc, err := client.NewAddonService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 1, Err: err}
+	}
+	return svc, nil
+}
+
 // configCmdKey is the context key for the root command reference.
 type configCmdKey struct{}
 
