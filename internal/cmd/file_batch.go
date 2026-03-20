@@ -94,17 +94,24 @@ func runBatchCommand(
 		return runBatchDryRun(cmd, svc, uuids, operation, opts, formatter)
 	}
 
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+	totalBatches := (len(uuids) + 99) / 100
+	verbose.Infof("batch %s: %d files in %d batch(es)", operation, len(uuids), totalBatches)
+
 	// Execute in chunks of 100
 	merged := &service.BatchResult{
 		Problems: make(map[string]string),
 	}
 
+	batchNum := 0
 	for i := 0; i < len(uuids); i += 100 {
 		end := i + 100
 		if end > len(uuids) {
 			end = len(uuids)
 		}
 		chunk := uuids[i:end]
+		batchNum++
+		verbose.Infof("batch %d/%d: %d files", batchNum, totalBatches, len(chunk))
 
 		var result *service.BatchResult
 		switch operation {

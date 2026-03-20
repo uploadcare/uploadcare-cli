@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewFileService(t *testing.T) {
-	svc, err := NewFileService("test-pub-key", "test-secret-key", "")
+	svc, err := NewFileService("test-pub-key", "test-secret-key", "", nil, nil)
 	if err != nil {
 		t.Fatalf("NewFileService failed: %v", err)
 	}
@@ -20,7 +20,7 @@ func TestNewFileService(t *testing.T) {
 }
 
 func TestNewFileService_WithCDNBase(t *testing.T) {
-	svc, err := NewFileService("test-pub-key", "test-secret-key", "https://custom.example.com")
+	svc, err := NewFileService("test-pub-key", "test-secret-key", "https://custom.example.com", nil, nil)
 	if err != nil {
 		t.Fatalf("NewFileService with CDN base failed: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestSetCDNURL_TrailingSlashNormalized(t *testing.T) {
 
 func TestNewFileService_EmptyKeys(t *testing.T) {
 	// SDK validates credentials at client creation time.
-	_, err := NewFileService("", "", "")
+	_, err := NewFileService("", "", "", nil, nil)
 	if err == nil {
 		t.Fatal("expected error for empty credentials")
 	}
@@ -124,7 +124,7 @@ func TestMapFileInfo_ViaSDKTypes(t *testing.T) {
 	// the mapping function indirectly.
 
 	// Create a service and verify it implements the interface properly.
-	svc, err := NewFileService("test-pub", "test-secret", "")
+	svc, err := NewFileService("test-pub", "test-secret", "", nil, nil)
 	if err != nil {
 		t.Fatalf("NewFileService: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestMapFileInfo_ViaSDKTypes(t *testing.T) {
 }
 
 func TestMapFileInfo_IncludeAppDataFlag(t *testing.T) {
-	svc, err := NewFileService("test-pub", "test-secret", "")
+	svc, err := NewFileService("test-pub", "test-secret", "", nil, nil)
 	if err != nil {
 		t.Fatalf("NewFileService: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestMapFileInfo_IncludeAppDataFlag(t *testing.T) {
 }
 
 func TestList_InvalidStartingPoint(t *testing.T) {
-	svc, _ := NewFileService("pub", "sec", "")
+	svc, _ := NewFileService("pub", "sec", "", nil, nil)
 	_, err := svc.List(context.Background(), service.FileListOptions{
 		StartingPoint: "2026-03-01 12:00:00",
 	})
@@ -163,7 +163,7 @@ func TestList_InvalidStartingPoint(t *testing.T) {
 }
 
 func TestIterate_InvalidStartingPoint(t *testing.T) {
-	svc, _ := NewFileService("pub", "sec", "")
+	svc, _ := NewFileService("pub", "sec", "", nil, nil)
 	err := svc.Iterate(context.Background(), service.FileListOptions{
 		StartingPoint: "not-a-date",
 	}, func(f service.File) error {
@@ -181,7 +181,7 @@ func TestIterate_InvalidStartingPoint(t *testing.T) {
 func TestFileServiceInterface(t *testing.T) {
 	// Verify all interface methods exist by calling UploadFromURL with test credentials.
 	// It should fail with an API error (not a panic or compilation error).
-	svc, _ := NewFileService("pub", "sec", "")
+	svc, _ := NewFileService("pub", "sec", "", nil, nil)
 	ctx := context.Background()
 
 	_, err := svc.UploadFromURL(ctx, service.URLUploadParams{URL: "https://example.com/test.jpg"})

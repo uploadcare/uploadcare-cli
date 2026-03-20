@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/uploadcare/uploadcare-cli/internal/output"
 	"github.com/uploadcare/uploadcare-cli/internal/service"
 	"github.com/uploadcare/uploadcare-go/v2/file"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
@@ -17,10 +19,13 @@ type fileService struct {
 	sdkFileSvc   file.Service
 	sdkUploadSvc upload.Service
 	cdnBase      string
+	verbose      *output.VerboseLogger
 }
 
 // NewFileService creates a service.FileService backed by the Uploadcare SDK.
-func NewFileService(publicKey, secretKey, cdnBase string) (service.FileService, error) {
+// An optional httpClient can be provided to customise HTTP behaviour (e.g.
+// verbose logging). Pass nil to use the default client.
+func NewFileService(publicKey, secretKey, cdnBase string, httpClient *http.Client, verbose *output.VerboseLogger) (service.FileService, error) {
 	creds := ucare.APICreds{
 		PublicKey: publicKey,
 		SecretKey: secretKey,
@@ -29,6 +34,7 @@ func NewFileService(publicKey, secretKey, cdnBase string) (service.FileService, 
 		APIVersion:             ucare.APIv07,
 		SignBasedAuthentication: true,
 		CDNBase:                cdnBase,
+		HTTPClient:             httpClient,
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
@@ -38,6 +44,7 @@ func NewFileService(publicKey, secretKey, cdnBase string) (service.FileService, 
 		sdkFileSvc:   file.NewService(client),
 		sdkUploadSvc: upload.NewService(client),
 		cdnBase:      cdnBase,
+		verbose:      verbose,
 	}, nil
 }
 
@@ -264,6 +271,7 @@ func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploa
 		sdkParams.SaveURLDuplicates = ucare.String(upload.URLDuplicatesTrue)
 	}
 
+	s.verbose.Infof("uploading from URL: %s", params.URL)
 	res, err := s.sdkUploadSvc.FromURL(ctx, sdkParams)
 	if err != nil {
 		return nil, err
@@ -271,11 +279,14 @@ func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploa
 
 	info, ok := res.Info()
 	if ok {
+		s.verbose.Info("from-url", "completed synchronously")
 		return s.enrichUploadInfo(ctx, info.BasicFileInfo.ID, mapUploadFileInfo(info)), nil
 	}
 
+	s.verbose.Infof("from-url: waiting for async processing (timeout %s)", timeout)
 	select {
 	case info = <-res.Done():
+		s.verbose.Info("from-url", "async processing complete")
 		return s.enrichUploadInfo(ctx, info.BasicFileInfo.ID, mapUploadFileInfo(info)), nil
 	case err = <-res.Error():
 		return nil, err
@@ -288,8 +299,10 @@ func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploa
 }
 
 func (s *fileService) enrichUploadInfo(ctx context.Context, id string, fallback *service.File) *service.File {
+	s.verbose.Infof("fetching full file info for %s", id)
 	fileInfo, err := s.sdkFileSvc.Info(ctx, id, nil)
 	if err != nil {
+		s.verbose.Infof("file info fetch failed, using upload response: %v", err)
 		s.setCDNURL(fallback)
 		return fallback
 	}

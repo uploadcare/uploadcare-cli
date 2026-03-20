@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/uploadcare/uploadcare-cli/internal/output"
 	"github.com/uploadcare/uploadcare-go/v2/ucare"
 )
 
@@ -102,6 +103,7 @@ type ProjectEntry struct {
 type Loader struct {
 	v       *viper.Viper
 	flagSet map[string]bool // tracks keys explicitly set via CLI flags
+	verbose *output.VerboseLogger
 }
 
 // NewLoader creates a new config loader backed by the given Viper instance.
@@ -111,6 +113,11 @@ func NewLoader(v *viper.Viper) *Loader {
 		v = viper.New()
 	}
 	return &Loader{v: v, flagSet: make(map[string]bool)}
+}
+
+// SetVerbose sets the verbose logger for diagnostic output during config resolution.
+func (l *Loader) SetVerbose(v *output.VerboseLogger) {
+	l.verbose = v
 }
 
 // Init sets up Viper to read from the config file and bind environment variables.
@@ -145,6 +152,9 @@ func (l *Loader) Init() error {
 		if !errors.As(err, &notFound) {
 			return fmt.Errorf("failed to read config file: %w", err)
 		}
+		l.verbose.Info("config", "no config file found")
+	} else {
+		l.verbose.Info("config", l.v.ConfigFileUsed())
 	}
 	return nil
 }
@@ -203,14 +213,16 @@ func (l *Loader) bindBoolFlag(flags interface {
 // keys are only used as a final fallback after project lookup.
 // Commands should call RequirePublicKey or RequireBoth on the result to
 // validate what they need.
-func (l *Loader) ResolveProjectCredentials() (*ProjectCredentials, error) {
+func (l *Loader) ResolveProjectCredentials(verbose *output.VerboseLogger) (*ProjectCredentials, error) {
 	// If either direct key was explicitly provided via flags or env vars
 	// (priorities 1-2), return immediately. This prevents a misconfigured
 	// shell/CI from silently targeting the wrong project.
 	if l.directKeysFromFlagOrEnv() {
 		pubKey := l.v.GetString("public_key")
 		secKey := l.v.GetString("secret_key")
-		return &ProjectCredentials{PublicKey: pubKey, SecretKey: secKey}, nil
+		creds := &ProjectCredentials{PublicKey: pubKey, SecretKey: secKey}
+		l.logCredentialSource(verbose, creds)
+		return creds, nil
 	}
 
 	// No direct keys from flags/env — try project name lookup (priorities 3-4).
@@ -220,13 +232,53 @@ func (l *Loader) ResolveProjectCredentials() (*ProjectCredentials, error) {
 	}
 
 	if projectName != "" {
-		return l.lookupProject(projectName)
+		creds, err := l.lookupProject(projectName)
+		if err != nil {
+			return nil, err
+		}
+		verbose.AuthSource(fmt.Sprintf("project %q from config file", projectName))
+		l.logCredentials(verbose, creds)
+		return creds, nil
 	}
 
 	// Fall back to top-level config file keys (priority 5).
 	pubKey := l.v.GetString("public_key")
 	secKey := l.v.GetString("secret_key")
-	return &ProjectCredentials{PublicKey: pubKey, SecretKey: secKey}, nil
+	creds := &ProjectCredentials{PublicKey: pubKey, SecretKey: secKey}
+	if pubKey != "" || secKey != "" {
+		verbose.AuthSource("top-level keys from config file")
+	}
+	l.logCredentials(verbose, creds)
+	return creds, nil
+}
+
+// logCredentialSource logs the source of direct keys (flags or env vars).
+func (l *Loader) logCredentialSource(verbose *output.VerboseLogger, creds *ProjectCredentials) {
+	var sources []string
+	if l.flagSet["public_key"] {
+		sources = append(sources, "--public-key flag")
+	} else if os.Getenv("UPLOADCARE_PUBLIC_KEY") != "" {
+		sources = append(sources, "UPLOADCARE_PUBLIC_KEY env")
+	}
+	if l.flagSet["secret_key"] {
+		sources = append(sources, "--secret-key flag")
+	} else if os.Getenv("UPLOADCARE_SECRET_KEY") != "" {
+		sources = append(sources, "UPLOADCARE_SECRET_KEY env")
+	}
+	if len(sources) > 0 {
+		verbose.AuthSource(strings.Join(sources, ", "))
+	}
+	l.logCredentials(verbose, creds)
+}
+
+// logCredentials logs the resolved public and secret keys (masked).
+func (l *Loader) logCredentials(verbose *output.VerboseLogger, creds *ProjectCredentials) {
+	if creds.PublicKey != "" {
+		verbose.Credential("public_key", creds.PublicKey)
+	}
+	if creds.SecretKey != "" {
+		verbose.Credential("secret_key", creds.SecretKey)
+	}
 }
 
 // directKeysFromFlagOrEnv reports whether public_key or secret_key was
@@ -283,24 +335,35 @@ func (l *Loader) ResolveProjectAPIToken() string {
 //  4. Top-level cdn_base in config file
 //  5. Auto-computed from the resolved project's public key
 //  6. Fallback to DefaultCDNBase
-func (l *Loader) ResolveCDNBase(creds *ProjectCredentials) string {
+func (l *Loader) ResolveCDNBase(creds *ProjectCredentials, verbose *output.VerboseLogger) string {
 	// Priorities 1-2: flag or env var override everything.
 	if l.cdnBaseFromFlagOrEnv() {
-		return l.v.GetString("cdn_base")
+		v := l.v.GetString("cdn_base")
+		if l.flagSet["cdn_base"] {
+			verbose.Info("cdn_base", v+" (--cdn-base flag)")
+		} else {
+			verbose.Info("cdn_base", v+" (UPLOADCARE_CDN_BASE env)")
+		}
+		return v
 	}
 	// Priority 3: per-project cdn_base from the projects map.
 	if creds != nil && creds.CDNBase != "" {
+		verbose.Info("cdn_base", creds.CDNBase+" (per-project config)")
 		return creds.CDNBase
 	}
 	// Priority 4: top-level cdn_base in config file.
 	if v := l.v.GetString("cdn_base"); v != "" {
+		verbose.Info("cdn_base", v+" (config file)")
 		return v
 	}
 	// Priority 5: auto-computed from public key.
 	if creds != nil && creds.PublicKey != "" {
-		return ucare.CDNBaseURL(creds.PublicKey)
+		v := ucare.CDNBaseURL(creds.PublicKey)
+		verbose.Info("cdn_base", v+" (auto-computed from public key)")
+		return v
 	}
 	// Priority 6: legacy fallback.
+	verbose.Info("cdn_base", DefaultCDNBase+" (default)")
 	return DefaultCDNBase
 }
 

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// VerboseLogger writes HTTP request/response details to an io.Writer (typically stderr).
+// VerboseLogger writes diagnostic details to an io.Writer (typically stderr).
 // It is safe to call methods on a nil *VerboseLogger — they are no-ops.
 type VerboseLogger struct {
 	w io.Writer
@@ -56,4 +56,38 @@ func (v *VerboseLogger) Retry(attempt int, reason string) {
 		return
 	}
 	fmt.Fprintf(v.w, "  retry #%d: %s\n", attempt, reason)
+}
+
+// Credential logs a resolved credential with its value partially masked.
+// Only the first 4 characters are shown; the rest is replaced with asterisks.
+func (v *VerboseLogger) Credential(name, value string) {
+	if v == nil {
+		return
+	}
+	fmt.Fprintf(v.w, "  %s: %s\n", name, MaskSecret(value))
+}
+
+// Info logs a general-purpose key-value diagnostic line.
+func (v *VerboseLogger) Info(key, value string) {
+	if v == nil {
+		return
+	}
+	fmt.Fprintf(v.w, "  %s: %s\n", key, value)
+}
+
+// Infof logs a general-purpose formatted diagnostic line.
+func (v *VerboseLogger) Infof(format string, args ...any) {
+	if v == nil {
+		return
+	}
+	fmt.Fprintf(v.w, "  "+format+"\n", args...)
+}
+
+// MaskSecret returns a masked version of a secret string.
+// Shows the first 4 characters followed by asterisks.
+func MaskSecret(s string) string {
+	if len(s) <= 4 {
+		return "****"
+	}
+	return s[:4] + "****"
 }

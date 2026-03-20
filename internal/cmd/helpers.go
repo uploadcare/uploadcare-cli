@@ -29,12 +29,15 @@ func formatOptionsFromCmd(cmd *cobra.Command) output.FormatOptions {
 
 // fileServiceFromCmd resolves credentials from config and creates a FileService.
 func fileServiceFromCmd(cmd *cobra.Command) (service.FileService, error) {
-	loader, err := configLoaderFromCmd(cmd)
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
 	if err != nil {
 		return nil, &ExitError{Code: 3, Err: err}
 	}
 
-	creds, err := loader.ResolveProjectCredentials()
+	creds, err := loader.ResolveProjectCredentials(verbose)
 	if err != nil {
 		return nil, &ExitError{Code: 3, Err: err}
 	}
@@ -42,8 +45,10 @@ func fileServiceFromCmd(cmd *cobra.Command) (service.FileService, error) {
 		return nil, &ExitError{Code: 3, Err: err}
 	}
 
-	cdnBase := loader.ResolveCDNBase(creds)
-	svc, err := client.NewFileService(creds.PublicKey, creds.SecretKey, cdnBase)
+	httpClient := client.NewVerboseHTTPClient(verbose)
+
+	cdnBase := loader.ResolveCDNBase(creds, verbose)
+	svc, err := client.NewFileService(creds.PublicKey, creds.SecretKey, cdnBase, httpClient, verbose)
 	if err != nil {
 		return nil, &ExitError{Code: 1, Err: err}
 	}
@@ -56,13 +61,14 @@ type configCmdKey struct{}
 // configLoaderFromCmd lazily initializes and returns the config loader.
 // Config is only loaded when a command actually needs it, so config-free
 // commands (e.g. version) are not affected by a malformed config file.
-func configLoaderFromCmd(cmd *cobra.Command) (*config.Loader, error) {
+func configLoaderFromCmd(cmd *cobra.Command, verbose *output.VerboseLogger) (*config.Loader, error) {
 	rootCmd, _ := cmd.Context().Value(configCmdKey{}).(*cobra.Command)
 	if rootCmd == nil {
 		rootCmd = cmd
 	}
 
 	loader := config.NewLoader(nil)
+	loader.SetVerbose(verbose)
 	if err := loader.Init(); err != nil {
 		return nil, err
 	}

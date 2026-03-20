@@ -38,7 +38,7 @@ func TestResolveProjectCredentials_DirectKeys(t *testing.T) {
 public_key: "pub123"
 secret_key: "sec456"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,7 +58,7 @@ projects:
     public_key: "proj-pub"
     secret_key: "proj-sec"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -80,7 +80,7 @@ projects:
     public_key: "proj-pub"
     secret_key: "proj-sec"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -106,7 +106,7 @@ projects:
 	// Simulate --project flag by setting viper key directly
 	l.v.Set("project", "staging")
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -127,7 +127,7 @@ secret_key: "config-sec"
 	l.flagSet["public_key"] = true
 	l.flagSet["secret_key"] = true
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestResolveProjectCredentials_EnvVars(t *testing.T) {
 	t.Setenv("UPLOADCARE_PUBLIC_KEY", "env-pub")
 	t.Setenv("UPLOADCARE_SECRET_KEY", "env-sec")
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestResolveProjectCredentials_EnvVars(t *testing.T) {
 func TestResolveProjectCredentials_NoCredentials(t *testing.T) {
 	l := newTestLoader(t, "")
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("resolve should not error, got: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestResolveProjectCredentials_OnlyPublicKey(t *testing.T) {
 	l := newTestLoader(t, `
 public_key: "pub-only"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("resolve should not error, got: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestResolveProjectCredentials_OnlySecretKey(t *testing.T) {
 	l := newTestLoader(t, `
 secret_key: "sec-only"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("resolve should not error, got: %v", err)
 	}
@@ -225,7 +225,7 @@ projects:
 	l.v.Set("public_key", "flag-pub")
 	l.flagSet["public_key"] = true
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("resolve should not error, got: %v", err)
 	}
@@ -250,7 +250,7 @@ projects:
     public_key: "prod-pub"
     secret_key: "prod-sec"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -273,7 +273,7 @@ projects:
 	l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
 	t.Setenv("UPLOADCARE_SECRET_KEY", "env-sec")
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("resolve should not error, got: %v", err)
 	}
@@ -298,7 +298,7 @@ projects:
 `)
 	l.v.Set("project", "staging")
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -318,7 +318,7 @@ projects:
     public_key: "pub"
     secret_key: "sec"
 `)
-	_, err := l.ResolveProjectCredentials()
+	_, err := l.ResolveProjectCredentials(nil)
 	if !errors.Is(err, ErrProjectNotFound) {
 		t.Errorf("err = %v, want ErrProjectNotFound", err)
 	}
@@ -331,7 +331,7 @@ projects:
   "broken":
     public_key: "pub-only"
 `)
-	_, err := l.ResolveProjectCredentials()
+	_, err := l.ResolveProjectCredentials(nil)
 	if !errors.Is(err, ErrProjectNotFound) {
 		t.Errorf("err = %v, want ErrProjectNotFound", err)
 	}
@@ -403,7 +403,7 @@ func TestResolveCDNBase_ExplicitValue(t *testing.T) {
 	l := newTestLoader(t, `
 cdn_base: "https://custom-cdn.example.com"
 `)
-	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "somepublickey"})
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "somepublickey"}, nil)
 	if got != "https://custom-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want explicit value", got)
 	}
@@ -411,7 +411,7 @@ cdn_base: "https://custom-cdn.example.com"
 
 func TestResolveCDNBase_ComputedFromPublicKey(t *testing.T) {
 	l := newTestLoader(t, "")
-	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"})
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"}, nil)
 	if got == "" || got == DefaultCDNBase {
 		t.Errorf("ResolveCDNBase = %q, want computed URL from public key", got)
 	}
@@ -422,7 +422,7 @@ func TestResolveCDNBase_ComputedFromPublicKey(t *testing.T) {
 
 func TestResolveCDNBase_FallbackNoPublicKey(t *testing.T) {
 	l := newTestLoader(t, "")
-	got := l.ResolveCDNBase(&ProjectCredentials{})
+	got := l.ResolveCDNBase(&ProjectCredentials{}, nil)
 	if got != DefaultCDNBase {
 		t.Errorf("ResolveCDNBase = %q, want %q", got, DefaultCDNBase)
 	}
@@ -430,7 +430,7 @@ func TestResolveCDNBase_FallbackNoPublicKey(t *testing.T) {
 
 func TestResolveCDNBase_FallbackNilCreds(t *testing.T) {
 	l := newTestLoader(t, "")
-	got := l.ResolveCDNBase(nil)
+	got := l.ResolveCDNBase(nil, nil)
 	if got != DefaultCDNBase {
 		t.Errorf("ResolveCDNBase = %q, want %q", got, DefaultCDNBase)
 	}
@@ -440,7 +440,7 @@ func TestResolveCDNBase_ExplicitOverridesComputation(t *testing.T) {
 	l := newTestLoader(t, `
 cdn_base: "https://override.example.com"
 `)
-	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"})
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"}, nil)
 	if got != "https://override.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want explicit override", got)
 	}
@@ -451,7 +451,7 @@ func TestResolveCDNBase_EnvVar(t *testing.T) {
 	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
 	t.Setenv("UPLOADCARE_CDN_BASE", "https://env-cdn.example.com")
 
-	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"})
+	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"}, nil)
 	if got != "https://env-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want env value", got)
 	}
@@ -466,11 +466,11 @@ projects:
     secret_key: "proj-sec"
     cdn_base: "https://my-project-cdn.example.com"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := l.ResolveCDNBase(creds)
+	got := l.ResolveCDNBase(creds, nil)
 	if got != "https://my-project-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want per-project cdn_base", got)
 	}
@@ -485,11 +485,11 @@ projects:
     public_key: "proj-pub"
     secret_key: "proj-sec"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := l.ResolveCDNBase(creds)
+	got := l.ResolveCDNBase(creds, nil)
 	if got != "https://global-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want global cdn_base", got)
 	}
@@ -505,11 +505,11 @@ projects:
     secret_key: "proj-sec"
     cdn_base: "https://my-project-cdn.example.com"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := l.ResolveCDNBase(creds)
+	got := l.ResolveCDNBase(creds, nil)
 	if got != "https://my-project-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want per-project cdn_base over global", got)
 	}
@@ -528,11 +528,11 @@ projects:
 	l.v.Set("cdn_base", "https://flag-cdn.example.com")
 	l.flagSet["cdn_base"] = true
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := l.ResolveCDNBase(creds)
+	got := l.ResolveCDNBase(creds, nil)
 	if got != "https://flag-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want flag override", got)
 	}
@@ -550,11 +550,11 @@ projects:
 	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
 	t.Setenv("UPLOADCARE_CDN_BASE", "https://env-cdn.example.com")
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := l.ResolveCDNBase(creds)
+	got := l.ResolveCDNBase(creds, nil)
 	if got != "https://env-cdn.example.com" {
 		t.Errorf("ResolveCDNBase = %q, want env override", got)
 	}
@@ -568,11 +568,11 @@ projects:
     public_key: "demopublickey"
     secret_key: "proj-sec"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got := l.ResolveCDNBase(creds)
+	got := l.ResolveCDNBase(creds, nil)
 	if got == "" || got == DefaultCDNBase {
 		t.Errorf("ResolveCDNBase = %q, want auto-computed URL", got)
 	}
@@ -616,7 +616,7 @@ projects:
     public_key: "named-pub"
     secret_key: "named-sec"
 `)
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -649,7 +649,7 @@ func TestBindFlags_SetsViperFromChangedFlags(t *testing.T) {
 
 	l.BindFlags(root)
 
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -685,7 +685,7 @@ secret_key: "config-sec"
 	l.BindFlags(root)
 
 	// Config file values should be preserved
-	creds, err := l.ResolveProjectCredentials()
+	creds, err := l.ResolveProjectCredentials(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -748,7 +748,7 @@ func TestResolveProjectCredentials_NoProjectsMap(t *testing.T) {
 	l := newTestLoader(t, `
 default_project: "missing"
 `)
-	_, err := l.ResolveProjectCredentials()
+	_, err := l.ResolveProjectCredentials(nil)
 	if !errors.Is(err, ErrProjectNotFound) {
 		t.Errorf("err = %v, want ErrProjectNotFound", err)
 	}

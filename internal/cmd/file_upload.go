@@ -57,6 +57,7 @@ func newFileUploadCmd(fileSvc service.FileService) *cobra.Command {
 			}
 
 			opts := formatOptionsFromCmd(cmd)
+			verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
 			formatter := output.New(opts)
 
 			meta, err := parseMetadata(metadata)
@@ -90,6 +91,7 @@ func newFileUploadCmd(fileSvc service.FileService) *cobra.Command {
 				if err != nil {
 					return ExitErrorf(2, "detecting content type for %q: %v", path, err)
 				}
+				verbose.Infof("file: %s (%d bytes, %s)", path, fi.Size(), ct)
 				entries = append(entries, uploadFileEntry{
 					path:        path,
 					size:        fi.Size(),
@@ -105,15 +107,25 @@ func newFileUploadCmd(fileSvc service.FileService) *cobra.Command {
 			if forceDirect {
 				v := int64(0)
 				threshold = &v
+				verbose.Info("upload method", "direct (--force-direct)")
 			} else if forceMultipart {
 				v := int64(-1)
 				threshold = &v
+				verbose.Info("upload method", "multipart (--force-multipart)")
 			} else {
 				threshold = &multipartThreshold
 			}
 
 			var results []*service.File
 			for _, entry := range entries {
+				if !forceDirect && !forceMultipart {
+					if entry.size >= multipartThreshold {
+						verbose.Infof("upload method: multipart for %s (size %d >= threshold %d)", baseName(entry.path), entry.size, multipartThreshold)
+					} else {
+						verbose.Infof("upload method: direct for %s (size %d < threshold %d)", baseName(entry.path), entry.size, multipartThreshold)
+					}
+				}
+
 				f, err := os.Open(entry.path)
 				if err != nil {
 					return err
