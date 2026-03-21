@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +48,13 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 			quiet, _ := f.GetBool("quiet")
 			if verbose && quiet {
 				return fmt.Errorf("--verbose and --quiet are mutually exclusive")
+			}
+
+			// Disable color globally if --no-color flag is set.
+			// fatih/color already reads NO_COLOR env on init.
+			noColor, _ := f.GetBool("no-color")
+			if noColor {
+				color.NoColor = true
 			}
 
 			// Store the root command reference in context so helpers

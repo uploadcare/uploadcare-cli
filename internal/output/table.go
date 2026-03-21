@@ -1,10 +1,13 @@
 package output
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/fatih/color"
 )
 
 // TableFormatter writes data as a human-readable table.
@@ -20,7 +23,11 @@ func (f *TableFormatter) Format(w io.Writer, data any) error {
 		return err
 	}
 
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	// Write through a buffer so tabwriter aligns plain text first,
+	// then apply bold to the header line. Coloring before tabwriter
+	// breaks alignment because ANSI escapes inflate byte counts.
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 
 	// Header
 	if len(td.Headers) > 0 {
@@ -32,7 +39,22 @@ func (f *TableFormatter) Format(w io.Writer, data any) error {
 		fmt.Fprintln(tw, strings.Join(row, "\t"))
 	}
 
-	return tw.Flush()
+	if err := tw.Flush(); err != nil {
+		return err
+	}
+
+	out := buf.String()
+
+	// Bold the first line (header) after alignment is done.
+	if len(td.Headers) > 0 {
+		if i := strings.IndexByte(out, '\n'); i >= 0 {
+			bold := color.New(color.Bold)
+			out = bold.Sprint(out[:i]) + out[i:]
+		}
+	}
+
+	_, err := io.WriteString(w, out)
+	return err
 }
 
 // TableData is the structured input for the table formatter.

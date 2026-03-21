@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/uploadcare/uploadcare-cli/internal/output"
 	"github.com/uploadcare/uploadcare-cli/internal/service"
@@ -207,8 +208,9 @@ func runBatchCommand(
 	}
 
 	if len(merged.Problems) > 0 {
+		warn := color.New(color.FgYellow)
 		for uuid, problem := range merged.Problems {
-			fmt.Fprintf(cmd.ErrOrStderr(), "problem: %s: %s\n", uuid, problem)
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s %s: %s\n", warn.Sprint("problem:"), uuid, problem)
 		}
 		return ExitErrorf(1, "%d problems encountered", len(merged.Problems))
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/uploadcare/uploadcare-cli/internal/cmd"
 )
 
@@ -18,7 +19,8 @@ var (
 func main() {
 	root := cmd.NewRootCmd(version, commit, date)
 	if err := root.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		prefix := color.New(color.FgRed, color.Bold).Sprint("Error:")
+		fmt.Fprintf(os.Stderr, "%s %s\n", prefix, err)
 
 		var exitErr *cmd.ExitError
 		if errors.As(err, &exitErr) {
