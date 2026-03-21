@@ -18,6 +18,11 @@ func formatOptionsFromCmd(cmd *cobra.Command) output.FormatOptions {
 
 	jsonEnabled, fields := output.ParseJSONFlag(jsonRaw)
 
+	// --jq implies --json (as documented in root help text)
+	if jq != "" {
+		jsonEnabled = true
+	}
+
 	return output.FormatOptions{
 		JSON:    jsonEnabled,
 		Fields:  fields,

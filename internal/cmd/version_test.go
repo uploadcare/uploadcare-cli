@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -85,6 +86,38 @@ func TestRootCmd_VerboseQuietConflict(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "mutually exclusive") {
 		t.Errorf("error should mention mutual exclusivity, got: %v", err)
+	}
+}
+
+func TestRootCmd_JQImpliesJSON(t *testing.T) {
+	root := NewRootCmd("dev", "none", "unknown")
+
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"--jq", ".version", "version"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("--jq should not error, got: %v", err)
+	}
+
+	// The output should be JSON (jq applied), not the human-readable table
+	out := strings.TrimSpace(buf.String())
+	// jq '.version' on the version JSON should produce a quoted string
+	if !json.Valid([]byte(out)) && out != "" {
+		// At minimum, it should not contain the human "uploadcare-cli" header
+		if strings.Contains(out, "uploadcare-cli") {
+			t.Errorf("--jq without --json should still produce JSON output, got:\n%s", out)
+		}
+	}
+
+	// Also verify via formatOptionsFromCmd that JSON is set
+	opts := formatOptionsFromCmd(root)
+	if !opts.JSON {
+		t.Error("formatOptionsFromCmd should set JSON=true when --jq is specified")
+	}
+	if opts.JQ != ".version" {
+		t.Errorf("formatOptionsFromCmd JQ = %q, want %q", opts.JQ, ".version")
 	}
 }
 

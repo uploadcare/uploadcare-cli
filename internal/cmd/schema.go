@@ -13,6 +13,7 @@ type apiSchema struct {
 	GlobalFlags []flagSchema      `json:"global_flags"`
 	Commands    []cmdSchema       `json:"commands"`
 	ExitCodes   map[string]string `json:"exit_codes"`
+	AgentNotes  []string          `json:"agent_notes"`
 	URLAPI      *urlAPISchema     `json:"url_api"`
 }
 
@@ -24,12 +25,13 @@ type flagSchema struct {
 }
 
 type cmdSchema struct {
-	Path     string       `json:"path"`
-	Short    string       `json:"short"`
-	Long     string       `json:"long,omitempty"`
-	Args     argsSchema   `json:"args"`
-	Flags    []flagSchema `json:"flags,omitempty"`
-	Examples []string     `json:"examples,omitempty"`
+	Path       string       `json:"path"`
+	Short      string       `json:"short"`
+	Long       string       `json:"long,omitempty"`
+	Args       argsSchema   `json:"args"`
+	Flags      []flagSchema `json:"flags,omitempty"`
+	Examples   []string     `json:"examples,omitempty"`
+	JSONFields []string     `json:"json_fields,omitempty"`
 }
 
 type argsSchema struct {
@@ -72,6 +74,13 @@ No authentication required.`,
 					"2": "Usage error",
 					"3": "Auth/config error",
 				},
+				AgentNotes: []string{
+					"The --json flag uses an optional value. Use --json (no value) for all fields, or --json=field1,field2 (with = sign, no space) for specific fields. Do NOT use --json field1,field2 (with space) — the value will be parsed as a positional argument.",
+					"The --jq flag implies --json. You do not need to pass both --json and --jq.",
+					"All timestamps are in RFC 3339 / UTC format.",
+					"For batch operations (file store, file delete), exit code 1 means partial success — check the 'problems' field in JSON output.",
+					"When piping between commands, use --json=uuid or --jq '.uuid' to emit just the UUID for --from-stdin consumption.",
+				},
 				URLAPI: buildURLAPISchema(),
 			}
 
@@ -109,11 +118,12 @@ func collectCommands(cmd *cobra.Command, prefix string) []cmdSchema {
 		}
 
 		cs := cmdSchema{
-			Path:  path,
-			Short: sub.Short,
-			Long:  sub.Long,
-			Args:  extractArgs(sub),
-			Flags: collectFlags(sub.LocalFlags()),
+			Path:       path,
+			Short:      sub.Short,
+			Long:       sub.Long,
+			Args:       extractArgs(sub),
+			Flags:      collectFlags(sub.LocalFlags()),
+			JSONFields: jsonFieldsForCommand(path),
 		}
 
 		if sub.Example != "" {
@@ -205,4 +215,33 @@ func parseExamples(example string) []string {
 	}
 
 	return examples
+}
+
+// jsonFieldsForCommand returns the known JSON field names for a command.
+// These correspond to the struct JSON tags used when --json output is active.
+func jsonFieldsForCommand(path string) []string {
+	fileFields := []string{"uuid", "size", "filename", "mime_type", "is_image", "is_stored", "is_ready", "datetime_uploaded", "datetime_stored", "datetime_removed", "url", "original_file_url", "metadata", "appdata"}
+
+	switch path {
+	case "file info", "file upload", "file upload-from-url", "file local-copy":
+		return fileFields
+	case "file list":
+		return fileFields
+	case "file store", "file delete":
+		return []string{"results", "problems"}
+	case "file remote-copy":
+		return []string{"type", "result", "already_exists"}
+	case "group info", "group create", "group list":
+		return []string{"id", "datetime_created", "datetime_stored", "files_count", "cdn_url", "url", "files"}
+	case "webhook list", "webhook create", "webhook update":
+		return []string{"id", "target_url", "event", "is_active", "signing_secret", "created", "updated"}
+	case "addon execute", "addon status":
+		return []string{"status", "result"}
+	case "convert document", "convert video":
+		return []string{"token", "uuid", "status"}
+	case "version":
+		return []string{"version", "commit", "date", "go_version", "os", "arch"}
+	default:
+		return nil
+	}
 }

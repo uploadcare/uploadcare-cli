@@ -156,11 +156,32 @@ uploadcare
 │   ├── delete            Delete file(s)
 │   ├── local-copy        Copy file within Uploadcare storage
 │   └── remote-copy       Copy file to remote storage
+├── metadata
+│   ├── list              List all metadata keys for a file
+│   ├── get               Get a metadata value by key
+│   ├── set               Set a metadata key-value pair
+│   └── delete            Delete a metadata key
+├── group
+│   ├── list              List file groups
+│   ├── info              Get group details
+│   ├── create            Create a file group
+│   └── delete            Delete a file group
+├── convert
+│   ├── document          Convert a document
+│   └── video             Convert a video
+├── addon
+│   ├── execute           Execute an add-on on a file
+│   └── status            Check add-on execution status
+├── webhook
+│   ├── list              List webhooks
+│   ├── create            Create a webhook
+│   ├── update            Update a webhook
+│   └── delete            Delete a webhook
+├── url-api               URL API reference (CDN transformations)
+├── api-schema            Print machine-readable CLI schema as JSON
 ├── version               Print CLI version
 └── completion            Generate shell completions
 ```
-
-Additional command groups are planned: `metadata`, `group`, `convert`, `addon`, `webhook`, `project`, and `config`.
 
 ### Global flags
 
@@ -215,6 +236,85 @@ $ uploadcare file list --verbose
 | 1 | API error or unexpected failure |
 | 2 | Usage error (invalid flags, bad input) |
 | 3 | Authentication/configuration error |
+
+## AI & agent friendly
+
+The CLI is designed for use by AI agents (Claude Code, Cursor, Copilot, etc.) that invoke it as a subprocess. Every feature below works without interactive prompts — missing input causes an immediate, descriptive failure.
+
+### Machine-readable schema
+
+A single command gives an agent the full CLI surface — all commands, flags, arguments, examples, and available JSON fields — without parsing `--help` text:
+
+```bash
+uploadcare api-schema
+```
+
+The output includes:
+
+- **`commands[].json_fields`** — available fields for `--json=field1,field2` filtering per command
+- **`agent_notes`** — usage tips (e.g. `--json=` syntax, timestamp format, piping patterns)
+- **`url_api`** — complete URL API reference with all transformation operations
+
+```bash
+# List all command paths
+uploadcare api-schema | jq -r '.commands[].path'
+
+# Get available JSON fields for file info
+uploadcare api-schema | jq '.commands[] | select(.path == "file info") | .json_fields'
+
+# Read agent-specific guidance
+uploadcare api-schema | jq '.agent_notes'
+```
+
+### Structured output with field filtering
+
+Use `--json` to get machine-parseable output. Filter to specific fields with `--json=field1,field2` (note the `=` sign — a space won't work) to reduce token usage:
+
+```bash
+# Full JSON — all fields
+uploadcare file info <uuid> --json
+
+# Only uuid and size — ~50 bytes instead of ~2KB
+uploadcare file info <uuid> --json=uuid,size
+
+# Apply jq expression (implies --json automatically)
+uploadcare file list --jq '.[].uuid'
+```
+
+### Composable piping
+
+Commands accept `--from-stdin` for batch operations. Input is auto-detected as plain text (one value per line) or NDJSON (objects with a target field):
+
+```bash
+# Delete all unstored files
+uploadcare file list --page-all --stored false --json=uuid \
+  | uploadcare file delete --from-stdin
+
+# Stream all files as NDJSON (one object per line, no memory buildup)
+uploadcare file list --page-all --json=uuid,size,mime_type
+```
+
+### Safe exploration
+
+- **`--dry-run`** on mutating commands previews what would happen without making changes
+- **Input sanitization** rejects control characters, path traversal, and double-encoded strings before any API call
+- **Deterministic exit codes**: `0` success, `1` API error, `2` bad input, `3` missing credentials — agents can branch on these without parsing stderr
+
+### Example: agent workflow
+
+```bash
+# 1. Discover available commands (no auth needed)
+uploadcare api-schema | jq '.commands[].path'
+
+# 2. Upload and extract UUID
+uuid=$(uploadcare file upload photo.jpg --jq '.uuid')
+
+# 3. Tag it
+uploadcare metadata set "$uuid" category landscape
+
+# 4. Verify before destructive action
+uploadcare file delete "$uuid" --dry-run
+```
 
 ## Development
 
