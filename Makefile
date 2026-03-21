@@ -6,7 +6,7 @@ LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DA
 
 BINARY  := uploadcare
 
-.PHONY: build test lint clean
+.PHONY: build test lint clean release-snapshot
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY) ./cmd/uploadcare
@@ -18,4 +18,7 @@ lint:
 	golangci-lint run ./...
 
 clean:
-	rm -rf bin/
+	rm -rf bin/ dist/
+
+release-snapshot:
+	goreleaser release --snapshot --clean

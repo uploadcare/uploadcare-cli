@@ -15,6 +15,16 @@ A non-interactive command-line interface for the [Uploadcare](https://uploadcare
 
 ## Installation
 
+### Quick install (Linux / macOS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/uploadcare/uploadcare-cli/main/scripts/install.sh | sh
+```
+
+### Download from GitHub Releases
+
+Pre-built binaries for all platforms are available on the [Releases page](https://github.com/uploadcare/uploadcare-cli/releases).
+
 ### From source
 
 Requires Go 1.22+.
