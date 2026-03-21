@@ -52,10 +52,10 @@ Use --page-all to stream ALL groups as NDJSON (one JSON object per line).
 
 JSON fields: id, files_count, datetime_created, datetime_stored, cdn_url, url.`,
 		Example: `  # List groups as JSON
-  uploadcare group list --json
+  uploadcare group list --json all
 
   # List groups, newest first
-  uploadcare group list --ordering -datetime_created --json
+  uploadcare group list --ordering -datetime_created --json all
 
   # Stream all group IDs
   uploadcare group list --page-all --json id`,
@@ -154,7 +154,7 @@ cdn_url, url, files (array of file objects).`,
   uploadcare group info "740e1b8c-1ad8-4324-b7ec-112345678900~3"
 
   # Get group info as JSON
-  uploadcare group info "740e1b8c-1ad8-4324-b7ec-112345678900~3" --json`,
+  uploadcare group info "740e1b8c-1ad8-4324-b7ec-112345678900~3" --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			groupID := args[0]
@@ -224,7 +224,7 @@ JSON fields: id, files_count, datetime_created, cdn_url.`,
     | head -5 | uploadcare group create --from-stdin
 
   # Create a group and get JSON output
-  uploadcare group create UUID1 UUID2 --json
+  uploadcare group create UUID1 UUID2 --json all
 
   # Dry run: validate without creating
   uploadcare group create UUID1 UUID2 --dry-run`,
@@ -310,7 +310,7 @@ JSON fields: id, status.`,
   uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3"
 
   # Delete and confirm with JSON
-  uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3" --json
+  uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3" --json all
 
   # Dry run: verify group exists
   uploadcare group delete "740e1b8c-1ad8-4324-b7ec-112345678900~3" --dry-run`,

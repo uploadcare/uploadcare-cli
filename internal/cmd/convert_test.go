@@ -55,7 +55,6 @@ func newTestRootWithConvert(mock service.ConvertService) *cobra.Command {
 
 	flags := root.PersistentFlags()
 	flags.String("json", "", "Output as JSON")
-	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "jq expression")
 	flags.BoolP("quiet", "q", false, "Suppress output")
 	flags.BoolP("verbose", "v", false, "Verbose output")
@@ -101,7 +100,7 @@ func TestConvertDocument_NoWait_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithConvert(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "convert", "document", testUUID, "--format", "pdf", "--no-wait")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "convert", "document", testUUID, "--format", "pdf", "--no-wait")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

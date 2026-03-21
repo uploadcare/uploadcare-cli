@@ -38,7 +38,7 @@ uploadcare file list
 uploadcare file upload photo.jpg
 
 # Get file info as JSON
-uploadcare file info <uuid> --json
+uploadcare file info <uuid> --json all
 
 # Delete all unstored files (piping)
 uploadcare file list --page-all --stored false --json uuid \
@@ -191,7 +191,7 @@ uploadcare
 | `--secret-key` | API secret key |
 | `--project-api-token` | Account-level bearer token |
 | `--project` | Named project from config |
-| `--json [fields]` | JSON output; optional comma-separated field list |
+| `--json <fields>` | JSON output: `all` for every field, or `field1,field2` to select |
 | `--jq <expr>` | Apply jq expression (implies `--json`) |
 | `-q, --quiet` | Suppress non-error output |
 | `-v, --verbose` | Log HTTP requests/responses to stderr |
@@ -208,7 +208,7 @@ a1b2c3d4-e5f6-7890-abcd-ef1234567890 1258000   photo.jpg      true     2026-03-0
 b2c3d4e5-f6a7-8901-bcde-f12345678901 348160    document.pdf   false    2026-03-02T00:00:00Z
 ```
 
-**JSON** — activated with `--json`, supports field filtering:
+**JSON** — activated with `--json all` (all fields) or `--json field1,field2` (specific fields):
 
 ```bash
 uploadcare file info <uuid> --json uuid,size,filename
@@ -251,8 +251,8 @@ uploadcare api-schema
 
 The output includes:
 
-- **`commands[].json_fields`** — available fields for `--json=field1,field2` filtering per command
-- **`agent_notes`** — usage tips (e.g. `--json=` syntax, timestamp format, piping patterns)
+- **`commands[].json_fields`** — available fields for `--json field1,field2` filtering per command
+- **`agent_notes`** — usage tips (e.g. `--json` syntax, timestamp format, piping patterns)
 - **`url_api`** — complete URL API reference with all transformation operations
 
 ```bash
@@ -268,14 +268,14 @@ uploadcare api-schema | jq '.agent_notes'
 
 ### Structured output with field filtering
 
-Use `--json` to get machine-parseable output. Filter to specific fields with `--json=field1,field2` (note the `=` sign — a space won't work) to reduce token usage:
+Use `--json all` to get machine-parseable output, or `--json field1,field2` to select specific fields and reduce token usage:
 
 ```bash
 # Full JSON — all fields
-uploadcare file info <uuid> --json
+uploadcare file info <uuid> --json all
 
 # Only uuid and size — ~50 bytes instead of ~2KB
-uploadcare file info <uuid> --json=uuid,size
+uploadcare file info <uuid> --json uuid,size
 
 # Apply jq expression (implies --json automatically)
 uploadcare file list --jq '.[].uuid'
@@ -287,11 +287,11 @@ Commands accept `--from-stdin` for batch operations. Input is auto-detected as p
 
 ```bash
 # Delete all unstored files
-uploadcare file list --page-all --stored false --json=uuid \
+uploadcare file list --page-all --stored false --json uuid \
   | uploadcare file delete --from-stdin
 
 # Stream all files as NDJSON (one object per line, no memory buildup)
-uploadcare file list --page-all --json=uuid,size,mime_type
+uploadcare file list --page-all --json uuid,size,mime_type
 ```
 
 ### Safe exploration

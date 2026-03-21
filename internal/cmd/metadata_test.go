@@ -55,7 +55,6 @@ func newTestRootWithMetadata(mock service.MetadataService) *cobra.Command {
 
 	flags := root.PersistentFlags()
 	flags.String("json", "", "Output as JSON")
-	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "jq expression")
 	flags.BoolP("quiet", "q", false, "Suppress output")
 	flags.BoolP("verbose", "v", false, "Verbose output")
@@ -94,7 +93,7 @@ func TestMetadataList_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithMetadata(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "metadata", "list", testUUID)
+	stdout, _, err := executeCommand(t, root, "--json", "all", "metadata", "list", testUUID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -146,7 +145,7 @@ func TestMetadataGet_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithMetadata(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "metadata", "get", testUUID, "env")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "metadata", "get", testUUID, "env")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -216,7 +215,7 @@ func TestMetadataSet_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithMetadata(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "metadata", "set", testUUID, "env", "staging")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "metadata", "set", testUUID, "env", "staging")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -277,7 +276,7 @@ func TestMetadataDelete_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithMetadata(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "metadata", "delete", testUUID, "env")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "metadata", "delete", testUUID, "env")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

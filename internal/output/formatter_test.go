@@ -318,7 +318,7 @@ func TestParseJSONFlag(t *testing.T) {
 		wantFields []string
 	}{
 		{"", false, nil},
-		{"true", true, nil},
+		{"all", true, nil},
 		{"uuid", true, []string{"uuid"}},
 		{"uuid,size", true, []string{"uuid", "size"}},
 		{"uuid, size, filename", true, []string{"uuid", "size", "filename"}},

@@ -44,7 +44,7 @@ func TestFileStore_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "store", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "store", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestFileStore_WithProblems_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "store", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "store", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 	if err == nil {
 		t.Fatal("expected error when there are problems in JSON mode")
 	}
@@ -151,7 +151,7 @@ func TestFileStore_DryRun_NotFound_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "store", "--dry-run", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "store", "--dry-run", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 	if err == nil {
 		t.Fatal("expected error when dry-run finds missing files in JSON mode")
 	}

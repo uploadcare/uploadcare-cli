@@ -37,13 +37,13 @@ func newMetadataListCmd(metaSvc service.MetadataService) *cobra.Command {
 		Short: "List all metadata for a file",
 		Long: `List all metadata key-value pairs attached to a file.
 
-Returns a table of keys and values, or a JSON object (map) when --json
+Returns a table of keys and values, or a JSON object (map) when --json all
 is specified. Returns "No metadata found" when the file has no metadata.`,
 		Example: `  # List metadata as a table
   uploadcare metadata list 740e1b8c-1ad8-4324-b7ec-112345678900
 
   # List metadata as JSON
-  uploadcare metadata list 740e1b8c-1ad8-4324-b7ec-112345678900 --json`,
+  uploadcare metadata list 740e1b8c-1ad8-4324-b7ec-112345678900 --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
@@ -93,12 +93,12 @@ func newMetadataGetCmd(metaSvc service.MetadataService) *cobra.Command {
 		Long: `Get the value of a single metadata key on a file.
 
 Prints the value as plain text, or as a JSON object with "key" and "value"
-fields when --json is specified. Returns an error if the key does not exist.`,
+fields when --json all is specified. Returns an error if the key does not exist.`,
 		Example: `  # Get a metadata value
   uploadcare metadata get 740e1b8c-1ad8-4324-b7ec-112345678900 source
 
   # Get as JSON
-  uploadcare metadata get 740e1b8c-1ad8-4324-b7ec-112345678900 source --json`,
+  uploadcare metadata get 740e1b8c-1ad8-4324-b7ec-112345678900 source --json all`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid, key := args[0], args[1]
@@ -157,10 +157,10 @@ new_value, status.`,
   uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera
 
   # Set and confirm with JSON
-  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera --json
+  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera --json all
 
   # Dry run: preview the change
-  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera --dry-run --json`,
+  uploadcare metadata set 740e1b8c-1ad8-4324-b7ec-112345678900 source camera --dry-run --json all`,
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid, key, value := args[0], args[1], args[2]
@@ -240,7 +240,7 @@ JSON fields (--json): key, status. With --dry-run: key, value, status.`,
   uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source
 
   # Delete and confirm with JSON
-  uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source --json
+  uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source --json all
 
   # Dry run: verify the key exists first
   uploadcare metadata delete 740e1b8c-1ad8-4324-b7ec-112345678900 source --dry-run`,

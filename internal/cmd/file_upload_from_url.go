@@ -65,7 +65,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
     --json uuid
 
   # Dry run: validate URLs without uploading
-  uploadcare file upload-from-url https://example.com/photo.jpg --dry-run --json`,
+  uploadcare file upload-from-url https://example.com/photo.jpg --dry-run --json all`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch store {

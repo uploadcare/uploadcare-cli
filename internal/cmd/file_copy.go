@@ -35,7 +35,7 @@ is_ready, datetime_uploaded, original_file_url.`,
   uploadcare file local-copy 740e1b8c-1ad8-4324-b7ec-112345678900 --store
 
   # Dry run: verify the source file exists
-  uploadcare file local-copy 740e1b8c-1ad8-4324-b7ec-112345678900 --dry-run --json`,
+  uploadcare file local-copy 740e1b8c-1ad8-4324-b7ec-112345678900 --dry-run --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
@@ -133,7 +133,7 @@ JSON fields: result (remote URL or identifier), already_exists (bool).`,
 
   # Dry run: verify the source file exists
   uploadcare file remote-copy 740e1b8c-1ad8-4324-b7ec-112345678900 \
-    --target my-s3-bucket --dry-run --json`,
+    --target my-s3-bucket --dry-run --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]

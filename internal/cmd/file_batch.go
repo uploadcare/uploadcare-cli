@@ -51,7 +51,7 @@ Exit codes:
     | uploadcare file store --from-stdin
 
   # Dry run: check which files would be stored
-  uploadcare file store UUID1 UUID2 --dry-run --json`,
+  uploadcare file store UUID1 UUID2 --dry-run --json all`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBatchCommand(cmd, args, fileSvc, fromStdin, dryRun, "store")
@@ -101,7 +101,7 @@ Exit codes:
     | uploadcare file delete --from-stdin
 
   # Dry run: check which files would be deleted
-  uploadcare file delete UUID1 UUID2 --dry-run --json`,
+  uploadcare file delete UUID1 UUID2 --dry-run --json all`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBatchCommand(cmd, args, fileSvc, fromStdin, dryRun, "delete")

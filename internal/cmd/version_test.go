@@ -36,22 +36,22 @@ func TestVersionCmd(t *testing.T) {
 	}
 }
 
-func TestRootCmd_JSONFlagNoArg(t *testing.T) {
+func TestRootCmd_JSONFlagAll(t *testing.T) {
 	root := NewRootCmd("dev", "none", "unknown")
 	root.SetOut(new(bytes.Buffer))
 	root.SetErr(new(bytes.Buffer))
-	root.SetArgs([]string{"--json", "version"})
+	root.SetArgs([]string{"--json", "all", "version"})
 
 	if err := root.Execute(); err != nil {
-		t.Fatalf("--json without argument should not error, got: %v", err)
+		t.Fatalf("--json all should not error, got: %v", err)
 	}
 
 	val, err := root.PersistentFlags().GetString("json")
 	if err != nil {
 		t.Fatalf("GetString(json): %v", err)
 	}
-	if val != "true" {
-		t.Errorf("--json without arg should be %q, got %q", "true", val)
+	if val != "all" {
+		t.Errorf("--json all should be %q, got %q", "all", val)
 	}
 }
 
@@ -59,10 +59,10 @@ func TestRootCmd_JSONFlagWithFields(t *testing.T) {
 	root := NewRootCmd("dev", "none", "unknown")
 	root.SetOut(new(bytes.Buffer))
 	root.SetErr(new(bytes.Buffer))
-	root.SetArgs([]string{"--json=uuid,size", "version"})
+	root.SetArgs([]string{"--json", "uuid,size", "version"})
 
 	if err := root.Execute(); err != nil {
-		t.Fatalf("--json=uuid,size should not error, got: %v", err)
+		t.Fatalf("--json uuid,size should not error, got: %v", err)
 	}
 
 	val, err := root.PersistentFlags().GetString("json")
@@ -70,7 +70,7 @@ func TestRootCmd_JSONFlagWithFields(t *testing.T) {
 		t.Fatalf("GetString(json): %v", err)
 	}
 	if val != "uuid,size" {
-		t.Errorf("--json=uuid,size should be %q, got %q", "uuid,size", val)
+		t.Errorf("--json uuid,size should be %q, got %q", "uuid,size", val)
 	}
 }
 

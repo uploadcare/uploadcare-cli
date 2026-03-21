@@ -64,7 +64,6 @@ func newTestRootWithGroup(mock service.GroupService) *cobra.Command {
 
 	flags := root.PersistentFlags()
 	flags.String("json", "", "Output as JSON")
-	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "jq expression")
 	flags.BoolP("quiet", "q", false, "Suppress output")
 	flags.BoolP("verbose", "v", false, "Verbose output")
@@ -119,7 +118,7 @@ func TestGroupList_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithGroup(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "group", "list")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "group", "list")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -144,7 +143,7 @@ func TestGroupList_PageAll(t *testing.T) {
 	}
 
 	root := newTestRootWithGroup(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "group", "list", "--page-all")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "group", "list", "--page-all")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,7 +190,7 @@ func TestGroupInfo_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithGroup(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "group", "info", testGroupID)
+	stdout, _, err := executeCommand(t, root, "--json", "all", "group", "info", testGroupID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -287,7 +286,7 @@ func TestGroupDelete_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithGroup(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "group", "delete", testGroupID)
+	stdout, _, err := executeCommand(t, root, "--json", "all", "group", "delete", testGroupID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

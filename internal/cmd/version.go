@@ -14,12 +14,12 @@ func newVersionCmd(version, commit, date string) *cobra.Command {
 		Short: "Print CLI version",
 		Long: `Print the CLI version, build commit, build date, Go version, and OS/arch.
 
-Use --json for machine-readable output.`,
+Use --json all for machine-readable output.`,
 		Example: `  # Print version info
   uploadcare version
 
   # Print version as JSON
-  uploadcare version --json`,
+  uploadcare version --json all`,
 		Args: cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			opts := formatOptionsFromCmd(cmd)

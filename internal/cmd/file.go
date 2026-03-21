@@ -57,13 +57,13 @@ original_file_url, metadata, appdata (with --include-appdata).`,
   uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900
 
   # Get file info as JSON
-  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --json
+  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --json all
 
   # Get only the URL and size
   uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --json original_file_url,size
 
   # Include appdata (e.g. virus scan results)
-  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --include-appdata --json`,
+  uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900 --include-appdata --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
@@ -132,7 +132,7 @@ JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
 is_ready, datetime_uploaded, datetime_stored, datetime_removed,
 original_file_url, metadata, appdata (with --include-appdata).`,
 		Example: `  # List first 100 files as JSON
-  uploadcare file list --json
+  uploadcare file list --json all
 
   # List only stored files, newest first, specific fields
   uploadcare file list --stored true --ordering -datetime_uploaded --json uuid,size,filename

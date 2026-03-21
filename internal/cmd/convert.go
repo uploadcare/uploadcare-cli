@@ -70,10 +70,10 @@ JSON fields (after completion): status, result.`,
   uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format png --page 3
 
   # Start conversion without waiting
-  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --no-wait --json
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --no-wait --json all
 
   # Dry run: validate parameters
-  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --dry-run --json`,
+  uploadcare convert document 740e1b8c-1ad8-4324-b7ec-112345678900 --format pdf --dry-run --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]
@@ -217,7 +217,7 @@ JSON fields (after completion): status, result.`,
   uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 --thumbs 5
 
   # Start conversion without waiting
-  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 --format mp4 --no-wait --json`,
+  uploadcare convert video 740e1b8c-1ad8-4324-b7ec-112345678900 --format mp4 --no-wait --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uuid := args[0]

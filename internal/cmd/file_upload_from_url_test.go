@@ -75,7 +75,7 @@ func TestFileUploadFromURL_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "upload-from-url", "https://example.com/image.jpg")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "upload-from-url", "https://example.com/image.jpg")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

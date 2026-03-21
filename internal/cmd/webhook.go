@@ -61,7 +61,7 @@ datetime_created, datetime_updated.`,
   uploadcare webhook list
 
   # List webhooks as JSON
-  uploadcare webhook list --json
+  uploadcare webhook list --json all
 
   # Get only webhook IDs and URLs
   uploadcare webhook list --json id,target_url`,
@@ -139,7 +139,7 @@ datetime_created.`,
     --active=false --signing-secret my-secret
 
   # Dry run: validate without creating
-  uploadcare webhook create https://example.com/hooks/upload --dry-run --json`,
+  uploadcare webhook create https://example.com/hooks/upload --dry-run --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetURL := args[0]
@@ -245,7 +245,7 @@ datetime_created, datetime_updated.`,
   uploadcare webhook update 12345 --event file.stored --active true
 
   # Dry run: validate without applying
-  uploadcare webhook update 12345 --target-url https://example.com/new --dry-run --json`,
+  uploadcare webhook update 12345 --target-url https://example.com/new --dry-run --json all`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
@@ -345,7 +345,7 @@ JSON fields: id, status.`,
   uploadcare webhook delete 12345
 
   # Delete and confirm with JSON
-  uploadcare webhook delete 12345 --json
+  uploadcare webhook delete 12345 --json all
 
   # Dry run: validate without deleting
   uploadcare webhook delete 12345 --dry-run`,

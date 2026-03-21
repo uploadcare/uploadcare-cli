@@ -29,16 +29,16 @@ func TestAPISchema_ContainsAgentNotes(t *testing.T) {
 		t.Fatal("agent_notes should not be empty")
 	}
 
-	// Verify the --json= syntax warning is present (highest value note)
+	// Verify the --json flag usage note is present
 	found := false
 	for _, note := range schema.AgentNotes {
-		if containsSubstring(note, "--json=") {
+		if containsSubstring(note, "--json") {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("agent_notes should contain the --json= syntax warning")
+		t.Error("agent_notes should contain the --json usage note")
 	}
 }
 

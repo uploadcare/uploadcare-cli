@@ -39,7 +39,7 @@ func TestFileLocalCopy_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "local-copy", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "local-copy", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestFileRemoteCopy_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "remote-copy",
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "remote-copy",
 		"--target", "my-storage",
 		"a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	)

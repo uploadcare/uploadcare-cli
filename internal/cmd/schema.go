@@ -75,11 +75,11 @@ No authentication required.`,
 					"3": "Auth/config error",
 				},
 				AgentNotes: []string{
-					"The --json flag uses an optional value. Use --json (no value) for all fields, or --json=field1,field2 (with = sign, no space) for specific fields. Do NOT use --json field1,field2 (with space) — the value will be parsed as a positional argument.",
+					"The --json flag requires a value: --json all (every field) or --json field1,field2 (specific fields).",
 					"The --jq flag implies --json. You do not need to pass both --json and --jq.",
 					"All timestamps are in RFC 3339 / UTC format.",
 					"For batch operations (file store, file delete), exit code 1 means partial success — check the 'problems' field in JSON output.",
-					"When piping between commands, use --json=uuid or --jq '.uuid' to emit just the UUID for --from-stdin consumption.",
+					"When piping between commands, use --json uuid or --jq '.uuid' to emit just the UUID for --from-stdin consumption.",
 				},
 				URLAPI: buildURLAPISchema(),
 			}

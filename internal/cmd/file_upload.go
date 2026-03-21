@@ -71,7 +71,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
   uploadcare file upload *.jpg --json uuid,filename,size
 
   # Dry run: validate without uploading
-  uploadcare file upload photo.jpg --dry-run --json
+  uploadcare file upload photo.jpg --dry-run --json all
 
   # Upload file paths read from stdin
   find ./images -name '*.png' | uploadcare file upload --from-stdin --json uuid`,

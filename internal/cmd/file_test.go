@@ -119,7 +119,6 @@ func newTestRoot(mock service.FileService) *cobra.Command {
 
 	flags := root.PersistentFlags()
 	flags.String("json", "", "Output as JSON")
-	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "jq expression")
 	flags.BoolP("quiet", "q", false, "Suppress output")
 	flags.BoolP("verbose", "v", false, "Verbose output")
@@ -189,7 +188,7 @@ func TestFileInfo_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "info", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "info", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -354,7 +353,7 @@ func TestFileList_JSON(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "list")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "list")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -385,7 +384,7 @@ func TestFileList_PageAll(t *testing.T) {
 	}
 
 	root := newTestRoot(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "file", "list", "--page-all")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "file", "list", "--page-all")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

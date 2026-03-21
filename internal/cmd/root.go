@@ -21,10 +21,10 @@ Or use a named project from ~/.config/uploadcare/cli.yaml:
   --project <name> / UPLOADCARE_PROJECT
 
 Output modes:
-  (default)    Human-readable tables
-  --json       Full JSON objects (one per result)
-  --json <f>   JSON with only the listed fields (comma-separated)
-  --jq <expr>  Apply a jq expression to the JSON output (implies --json)
+  (default)          Human-readable tables
+  --json all         Full JSON objects (one per result)
+  --json f1,f2,...   JSON with only the listed fields
+  --jq <expr>        Apply a jq expression to JSON output (implies --json)
   --quiet      Suppress all non-error output
   --verbose    Print HTTP request/response details to stderr
 
@@ -68,8 +68,7 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 	flags.String("project", "", "Project name from config (env: UPLOADCARE_PROJECT)")
 
 	// Output control
-	flags.String("json", "", "Output as JSON; optional comma-separated field list")
-	flags.Lookup("json").NoOptDefVal = "true"
+	flags.String("json", "", "Output as JSON: 'all' for every field, or field1,field2 to select")
 	flags.String("jq", "", "Apply jq expression to JSON output (implies --json)")
 	flags.BoolP("quiet", "q", false, "Suppress all non-error output")
 	flags.BoolP("verbose", "v", false, "Print HTTP request/response details to stderr (env: UPLOADCARE_VERBOSE)")

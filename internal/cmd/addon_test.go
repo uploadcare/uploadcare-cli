@@ -39,7 +39,6 @@ func newTestRootWithAddon(mock service.AddonService) *cobra.Command {
 
 	flags := root.PersistentFlags()
 	flags.String("json", "", "Output as JSON")
-	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "jq expression")
 	flags.BoolP("quiet", "q", false, "Suppress output")
 	flags.BoolP("verbose", "v", false, "Verbose output")
@@ -86,7 +85,7 @@ func TestAddonExecute_NoWait_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithAddon(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "addon", "execute", "remove-bg", testUUID, "--no-wait")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "addon", "execute", "remove-bg", testUUID, "--no-wait")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -226,7 +225,7 @@ func TestAddonStatus_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithAddon(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "addon", "status", "remove-bg", "req-123")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "addon", "status", "remove-bg", "req-123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

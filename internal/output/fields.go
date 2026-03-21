@@ -6,15 +6,15 @@ import (
 )
 
 // ParseJSONFlag parses the raw --json flag value into a boolean and field list.
-// The flag uses NoOptDefVal="true", so:
+//
 //   - "" → JSON disabled, nil fields
-//   - "true" → JSON enabled, nil fields (all fields)
+//   - "all" → JSON enabled, nil fields (all fields)
 //   - "uuid,size" → JSON enabled, ["uuid","size"]
 func ParseJSONFlag(raw string) (enabled bool, fields []string) {
 	if raw == "" {
 		return false, nil
 	}
-	if raw == "true" {
+	if raw == "all" {
 		return true, nil
 	}
 	return true, ParseFields(raw)

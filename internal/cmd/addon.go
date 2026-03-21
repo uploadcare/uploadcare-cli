@@ -94,11 +94,11 @@ JSON fields (after completion): status, result.`,
   uploadcare addon execute aws-rekognition-detect-labels 740e1b8c-1ad8-4324-b7ec-112345678900
 
   # Run background removal with JSON output
-  uploadcare addon execute remove-bg 740e1b8c-1ad8-4324-b7ec-112345678900 --json
+  uploadcare addon execute remove-bg 740e1b8c-1ad8-4324-b7ec-112345678900 --json all
 
   # Execute without waiting, get request ID
   uploadcare addon execute uc-clamav-virus-scan 740e1b8c-1ad8-4324-b7ec-112345678900 \
-    --no-wait --json
+    --no-wait --json all
 
   # Execute with custom parameters
   uploadcare addon execute aws-rekognition-detect-labels 740e1b8c-1ad8-4324-b7ec-112345678900 \
@@ -204,7 +204,7 @@ JSON fields: status, result (when done).`,
   uploadcare addon status uc-clamav-virus-scan req-12345-abcde
 
   # Check status as JSON
-  uploadcare addon status uc-clamav-virus-scan req-12345-abcde --json`,
+  uploadcare addon status uc-clamav-virus-scan req-12345-abcde --json all`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addonName, requestID := args[0], args[1]

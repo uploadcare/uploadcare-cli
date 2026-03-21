@@ -56,7 +56,6 @@ func newTestRootWithWebhook(mock service.WebhookService) *cobra.Command {
 
 	flags := root.PersistentFlags()
 	flags.String("json", "", "Output as JSON")
-	flags.Lookup("json").NoOptDefVal = "true"
 	flags.String("jq", "", "jq expression")
 	flags.BoolP("quiet", "q", false, "Suppress output")
 	flags.BoolP("verbose", "v", false, "Verbose output")
@@ -106,7 +105,7 @@ func TestWebhookList_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithWebhook(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "webhook", "list")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "webhook", "list")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -151,7 +150,7 @@ func TestWebhookCreate_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithWebhook(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "webhook", "create", "https://example.com/webhook")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "webhook", "create", "https://example.com/webhook")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -256,7 +255,7 @@ func TestWebhookDelete_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithWebhook(mock)
-	stdout, _, err := executeCommand(t, root, "--json", "webhook", "delete", "123")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "webhook", "delete", "123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
