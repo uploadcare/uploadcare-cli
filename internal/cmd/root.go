@@ -34,6 +34,9 @@ Exit codes:
   2  Usage error (bad arguments, invalid flags)
   3  Auth/config error (missing or invalid credentials)
 
+URL API (on-the-fly CDN image transformations):
+  Use "uploadcare url-api" for reference and examples.
+
 Use "uploadcare <command> --help" for details on any command.
 Use "uploadcare api-schema" for machine-readable command metadata.`,
 		SilenceUsage:  true,
@@ -87,6 +90,7 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 	rootCmd.AddCommand(newWebhookCmd(nil))
 	rootCmd.AddCommand(newConvertCmd(nil))
 	rootCmd.AddCommand(newAddonCmd(nil))
+	rootCmd.AddCommand(newURLAPICmd())
 
 	return rootCmd
 }

@@ -9,10 +9,11 @@ import (
 )
 
 type apiSchema struct {
-	Version     string       `json:"version"`
-	GlobalFlags []flagSchema `json:"global_flags"`
-	Commands    []cmdSchema  `json:"commands"`
+	Version     string            `json:"version"`
+	GlobalFlags []flagSchema      `json:"global_flags"`
+	Commands    []cmdSchema       `json:"commands"`
 	ExitCodes   map[string]string `json:"exit_codes"`
+	URLAPI      *urlAPISchema     `json:"url_api"`
 }
 
 type flagSchema struct {
@@ -71,6 +72,7 @@ No authentication required.`,
 					"2": "Usage error",
 					"3": "Auth/config error",
 				},
+				URLAPI: buildURLAPISchema(),
 			}
 
 			enc := json.NewEncoder(cmd.OutOrStdout())
