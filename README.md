@@ -1,5 +1,7 @@
 # Uploadcare CLI
 
+> **Note:** This project is in active development. Commands, flags, and output formats may change without notice until v1.0.
+
 A non-interactive command-line interface for the [Uploadcare](https://uploadcare.com) platform, written in Go. Manage files, projects, webhooks, conversions, and more from your terminal or CI/CD pipelines.
 
 ## Features
