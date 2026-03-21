@@ -12,19 +12,17 @@ import (
 )
 
 func TestNewFileService(t *testing.T) {
-	svc, err := NewFileService("test-pub-key", "test-secret-key", "", nil, nil)
+	_, err := NewFileService("test-pub-key", "test-secret-key", "", nil, nil)
 	if err != nil {
 		t.Fatalf("NewFileService failed: %v", err)
 	}
-	var _ service.FileService = svc
 }
 
 func TestNewFileService_WithCDNBase(t *testing.T) {
-	svc, err := NewFileService("test-pub-key", "test-secret-key", "https://custom.example.com", nil, nil)
+	_, err := NewFileService("test-pub-key", "test-secret-key", "https://custom.example.com", nil, nil)
 	if err != nil {
 		t.Fatalf("NewFileService with CDN base failed: %v", err)
 	}
-	var _ service.FileService = svc
 }
 
 func TestSetCDNURL_RewritesOriginalFileURL(t *testing.T) {
@@ -106,7 +104,7 @@ func TestMapFileInfo_Complete(t *testing.T) {
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
-		w.Write([]byte(resp))
+		_, _ = w.Write([]byte(resp))
 	}))
 	defer server.Close()
 

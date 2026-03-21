@@ -44,7 +44,7 @@ For the full machine-readable reference with all parameters and values:
   https://ucarecdn.com/{uuid}/-/autorotate/yes/-/resize/1200x/-/quality/smart/-/format/auto/`,
 		Args: cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			_ = cmd.Help()
 		},
 	}
 }

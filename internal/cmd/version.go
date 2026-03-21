@@ -26,7 +26,7 @@ Use --json all for machine-readable output.`,
 
 			if opts.JSON || opts.JQ != "" {
 				formatter := output.New(opts)
-				formatter.Format(cmd.OutOrStdout(), map[string]string{
+				_ = formatter.Format(cmd.OutOrStdout(), map[string]string{
 					"version": version,
 					"commit":  commit,
 					"date":    date,
@@ -37,7 +37,7 @@ Use --json all for machine-readable output.`,
 				return
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(),
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(),
 				"uploadcare-cli %s\ncommit: %s\nbuilt:  %s\ngo:     %s\nos/arch: %s/%s\n",
 				version, commit, date,
 				runtime.Version(),

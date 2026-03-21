@@ -115,7 +115,7 @@ JSON fields (after completion): status, result.`,
 						"status": "would convert",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would convert %s to %s\n", uuid, format)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would convert %s to %s\n", uuid, format)
 				return nil
 			}
 
@@ -128,7 +128,7 @@ JSON fields (after completion): status, result.`,
 				if opts.JSON {
 					return formatter.Format(cmd.OutOrStdout(), result)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Token: %s\nUUID: %s\n", result.Token, result.UUID)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Token: %s\nUUID: %s\n", result.Token, result.UUID)
 				return nil
 			}
 
@@ -144,7 +144,7 @@ JSON fields (after completion): status, result.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\nResult: %s\n", status.Status, status.ResultURL)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\nResult: %s\n", status.Status, status.ResultURL)
 			return nil
 		},
 	}
@@ -259,7 +259,7 @@ JSON fields (after completion): status, result.`,
 						"status": "would convert",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would convert video %s\n", uuid)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would convert video %s\n", uuid)
 				return nil
 			}
 
@@ -272,7 +272,7 @@ JSON fields (after completion): status, result.`,
 				if opts.JSON {
 					return formatter.Format(cmd.OutOrStdout(), result)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Token: %s\nUUID: %s\n", result.Token, result.UUID)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Token: %s\nUUID: %s\n", result.Token, result.UUID)
 				return nil
 			}
 
@@ -288,7 +288,7 @@ JSON fields (after completion): status, result.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\nResult: %s\n", status.Status, status.ResultURL)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\nResult: %s\n", status.Status, status.ResultURL)
 			return nil
 		},
 	}

@@ -75,12 +75,12 @@ func (s *fileService) Info(ctx context.Context, uuid string, includeAppData bool
 
 func mapFileInfo(info file.Info) *service.File {
 	f := &service.File{
-		UUID:     info.BasicFileInfo.ID,
-		Size:     int64(info.BasicFileInfo.Size),
-		Filename: info.BasicFileInfo.OriginalFileName,
-		MimeType: info.BasicFileInfo.MimeType,
-		IsImage:  info.BasicFileInfo.IsImage,
-		IsReady:  info.BasicFileInfo.IsReady,
+		UUID:     info.ID,
+		Size:     int64(info.Size),
+		Filename: info.OriginalFileName,
+		MimeType: info.MimeType,
+		IsImage:  info.IsImage,
+		IsReady:  info.IsReady,
 		IsStored: info.StoredAt != nil,
 		URL:      info.URL,
 		Metadata: info.Metadata,
@@ -114,12 +114,12 @@ func mapFileInfo(info file.Info) *service.File {
 
 func mapUploadFileInfo(info upload.FileInfo) *service.File {
 	return &service.File{
-		UUID:     info.BasicFileInfo.ID,
-		Size:     int64(info.BasicFileInfo.Size),
-		Filename: info.BasicFileInfo.OriginalFileName,
-		MimeType: info.BasicFileInfo.MimeType,
-		IsImage:  info.BasicFileInfo.IsImage,
-		IsReady:  info.BasicFileInfo.IsReady,
+		UUID:     info.ID,
+		Size:     int64(info.Size),
+		Filename: info.OriginalFileName,
+		MimeType: info.MimeType,
+		IsImage:  info.IsImage,
+		IsReady:  info.IsReady,
 		IsStored: info.IsStored,
 	}
 }
@@ -236,7 +236,7 @@ func (s *fileService) Upload(ctx context.Context, params service.UploadParams) (
 
 	// The upload API returns only basic fields (no timestamps, URLs, or
 	// metadata). Fetch the complete file info from the REST API.
-	return s.enrichUploadInfo(ctx, uploadInfo.BasicFileInfo.ID, mapUploadFileInfo(uploadInfo)), nil
+	return s.enrichUploadInfo(ctx, uploadInfo.ID, mapUploadFileInfo(uploadInfo)), nil
 }
 
 func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploadParams) (*service.File, error) {
@@ -280,14 +280,14 @@ func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploa
 	info, ok := res.Info()
 	if ok {
 		s.verbose.Info("from-url", "completed synchronously")
-		return s.enrichUploadInfo(ctx, info.BasicFileInfo.ID, mapUploadFileInfo(info)), nil
+		return s.enrichUploadInfo(ctx, info.ID, mapUploadFileInfo(info)), nil
 	}
 
 	s.verbose.Infof("from-url: waiting for async processing (timeout %s)", timeout)
 	select {
 	case info = <-res.Done():
 		s.verbose.Info("from-url", "async processing complete")
-		return s.enrichUploadInfo(ctx, info.BasicFileInfo.ID, mapUploadFileInfo(info)), nil
+		return s.enrichUploadInfo(ctx, info.ID, mapUploadFileInfo(info)), nil
 	case err = <-res.Error():
 		return nil, err
 	case <-ctx.Done():

@@ -31,7 +31,7 @@ func (v *VerboseLogger) Request(method, url string) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "--> %s %s\n", method, url)
+	_, _ = fmt.Fprintf(v.w, "--> %s %s\n", method, url)
 }
 
 // Response logs an incoming HTTP response line: <-- STATUS (duration)
@@ -39,7 +39,7 @@ func (v *VerboseLogger) Response(status string, duration time.Duration) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "<-- %s (%dms)\n", status, duration.Milliseconds())
+	_, _ = fmt.Fprintf(v.w, "<-- %s (%dms)\n", status, duration.Milliseconds())
 }
 
 // AuthSource logs which credential source was used.
@@ -47,7 +47,7 @@ func (v *VerboseLogger) AuthSource(source string) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "  auth: %s\n", source)
+	_, _ = fmt.Fprintf(v.w, "  auth: %s\n", source)
 }
 
 // Retry logs a retry attempt.
@@ -55,7 +55,7 @@ func (v *VerboseLogger) Retry(attempt int, reason string) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "  retry #%d: %s\n", attempt, reason)
+	_, _ = fmt.Fprintf(v.w, "  retry #%d: %s\n", attempt, reason)
 }
 
 // Credential logs a resolved credential with its value partially masked.
@@ -64,7 +64,7 @@ func (v *VerboseLogger) Credential(name, value string) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "  %s: %s\n", name, MaskSecret(value))
+	_, _ = fmt.Fprintf(v.w, "  %s: %s\n", name, MaskSecret(value))
 }
 
 // Info logs a general-purpose key-value diagnostic line.
@@ -72,7 +72,7 @@ func (v *VerboseLogger) Info(key, value string) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "  %s: %s\n", key, value)
+	_, _ = fmt.Fprintf(v.w, "  %s: %s\n", key, value)
 }
 
 // Infof logs a general-purpose formatted diagnostic line.
@@ -80,7 +80,7 @@ func (v *VerboseLogger) Infof(format string, args ...any) {
 	if v == nil {
 		return
 	}
-	fmt.Fprintf(v.w, "  "+format+"\n", args...)
+	_, _ = fmt.Fprintf(v.w, "  "+format+"\n", args...)
 }
 
 // MaskSecret returns a masked version of a secret string.

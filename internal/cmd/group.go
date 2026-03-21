@@ -264,7 +264,7 @@ JSON fields: id, files_count, datetime_created, cdn_url.`,
 						"status": "would create",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would create group with %d file(s)\n", len(uuids))
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would create group with %d file(s)\n", len(uuids))
 				return nil
 			}
 
@@ -344,7 +344,7 @@ JSON fields: id, status.`,
 						"status": "would delete",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would delete group %s (%d files)\n", g.ID, g.FilesCount)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would delete group %s (%d files)\n", g.ID, g.FilesCount)
 				return nil
 			}
 
@@ -359,7 +359,7 @@ JSON fields: id, status.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Deleted group %s\n", groupID)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted group %s\n", groupID)
 			return nil
 		},
 	}

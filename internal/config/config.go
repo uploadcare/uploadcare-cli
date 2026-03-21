@@ -130,16 +130,16 @@ func (l *Loader) Init() error {
 
 	// Bind env vars
 	l.v.SetEnvPrefix("")
-	l.v.BindEnv("public_key", "UPLOADCARE_PUBLIC_KEY")
-	l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
-	l.v.BindEnv("project_api_token", "UPLOADCARE_PROJECT_API_TOKEN")
-	l.v.BindEnv("project", "UPLOADCARE_PROJECT")
-	l.v.BindEnv("verbose", "UPLOADCARE_VERBOSE")
+	_ = l.v.BindEnv("public_key", "UPLOADCARE_PUBLIC_KEY")
+	_ = l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
+	_ = l.v.BindEnv("project_api_token", "UPLOADCARE_PROJECT_API_TOKEN")
+	_ = l.v.BindEnv("project", "UPLOADCARE_PROJECT")
+	_ = l.v.BindEnv("verbose", "UPLOADCARE_VERBOSE")
 
-	l.v.BindEnv("rest_api_base", "UPLOADCARE_REST_API_BASE")
-	l.v.BindEnv("upload_api_base", "UPLOADCARE_UPLOAD_API_BASE")
-	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
-	l.v.BindEnv("project_api_base", "UPLOADCARE_PROJECT_API_BASE")
+	_ = l.v.BindEnv("rest_api_base", "UPLOADCARE_REST_API_BASE")
+	_ = l.v.BindEnv("upload_api_base", "UPLOADCARE_UPLOAD_API_BASE")
+	_ = l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
+	_ = l.v.BindEnv("project_api_base", "UPLOADCARE_PROJECT_API_BASE")
 
 	// Defaults
 	l.v.SetDefault("rest_api_base", DefaultRESTAPIBase)

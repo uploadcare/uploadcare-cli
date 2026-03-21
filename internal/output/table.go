@@ -31,12 +31,12 @@ func (f *TableFormatter) Format(w io.Writer, data any) error {
 
 	// Header
 	if len(td.Headers) > 0 {
-		fmt.Fprintln(tw, strings.Join(td.Headers, "\t"))
+		_, _ = fmt.Fprintln(tw, strings.Join(td.Headers, "\t"))
 	}
 
 	// Rows
 	for _, row := range td.Rows {
-		fmt.Fprintln(tw, strings.Join(row, "\t"))
+		_, _ = fmt.Fprintln(tw, strings.Join(row, "\t"))
 	}
 
 	if err := tw.Flush(); err != nil {

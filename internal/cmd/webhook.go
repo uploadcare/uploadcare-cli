@@ -171,7 +171,7 @@ datetime_created.`,
 						"status":     "would create",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would create webhook: %s (event: %s, active: %v)\n", targetURL, event, active)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would create webhook: %s (event: %s, active: %v)\n", targetURL, event, active)
 				return nil
 			}
 
@@ -296,7 +296,7 @@ datetime_created, datetime_updated.`,
 						"status": "would update",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would update webhook %s\n", id)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would update webhook %s\n", id)
 				return nil
 			}
 
@@ -375,7 +375,7 @@ JSON fields: id, status.`,
 						"status": "would delete",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would delete webhook %s\n", id)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would delete webhook %s\n", id)
 				return nil
 			}
 
@@ -390,7 +390,7 @@ JSON fields: id, status.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Deleted webhook %s\n", id)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted webhook %s\n", id)
 			return nil
 		},
 	}

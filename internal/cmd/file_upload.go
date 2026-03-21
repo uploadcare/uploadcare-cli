@@ -190,13 +190,13 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 					Metadata:           meta,
 					MultipartThreshold: threshold,
 				})
-				f.Close()
+				_ = f.Close()
 				if err != nil {
 					return fmt.Errorf("uploading %q: %w", entry.path, err)
 				}
 
 				if showProgress {
-					fmt.Fprintln(cmd.ErrOrStderr())
+					_, _ = fmt.Fprintln(cmd.ErrOrStderr())
 				}
 
 				results = append(results, result)
@@ -280,7 +280,7 @@ func detectContentType(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	buf := make([]byte, 512)
 	n, err := f.Read(buf)
@@ -314,7 +314,7 @@ func (p *progressReader) Read(buf []byte) (int, error) {
 	if n > 0 {
 		current := p.read.Add(int64(n))
 		pct := float64(current) / float64(p.total) * 100
-		fmt.Fprintf(p.w, "\r%s: %.1f%% (%d/%d bytes)", p.label, pct, current, p.total)
+		_, _ = fmt.Fprintf(p.w, "\r%s: %.1f%% (%d/%d bytes)", p.label, pct, current, p.total)
 	}
 	return n, err
 }

@@ -87,7 +87,7 @@ No authentication required.`,
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetEscapeHTML(false)
 			enc.SetIndent("", "  ")
-			enc.Encode(schema)
+			_ = enc.Encode(schema)
 		},
 	}
 }

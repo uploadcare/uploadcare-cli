@@ -147,7 +147,7 @@ JSON fields (after completion): status, result.`,
 						"status": "would execute",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would execute %s on %s\n", addonName, fileUUID)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would execute %s on %s\n", addonName, fileUUID)
 				return nil
 			}
 
@@ -160,7 +160,7 @@ JSON fields (after completion): status, result.`,
 				if opts.JSON {
 					return formatter.Format(cmd.OutOrStdout(), result)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Request ID: %s\n", result.RequestID)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Request ID: %s\n", result.RequestID)
 				return nil
 			}
 
@@ -173,9 +173,9 @@ JSON fields (after completion): status, result.`,
 				return formatter.Format(cmd.OutOrStdout(), status)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", status.Status)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", status.Status)
 			if len(status.Result) > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "Result: %s\n", string(status.Result))
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Result: %s\n", string(status.Result))
 			}
 			return nil
 		},
@@ -235,9 +235,9 @@ JSON fields: status, result (when done).`,
 				return formatter.Format(cmd.OutOrStdout(), status)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", status.Status)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", status.Status)
 			if len(status.Result) > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "Result: %s\n", string(status.Result))
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Result: %s\n", string(status.Result))
 			}
 			return nil
 		},

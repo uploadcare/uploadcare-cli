@@ -210,7 +210,7 @@ func runBatchCommand(
 	if len(merged.Problems) > 0 {
 		warn := color.New(color.FgYellow)
 		for uuid, problem := range merged.Problems {
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s %s: %s\n", warn.Sprint("problem:"), uuid, problem)
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "%s %s: %s\n", warn.Sprint("problem:"), uuid, problem)
 		}
 		return ExitErrorf(1, "%d problems encountered", len(merged.Problems))
 	}

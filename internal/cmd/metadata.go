@@ -73,7 +73,7 @@ is specified. Returns "No metadata found" when the file has no metadata.`,
 			}
 
 			if len(meta) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No metadata found")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No metadata found")
 				return nil
 			}
 
@@ -133,7 +133,7 @@ fields when --json all is specified. Returns an error if the key does not exist.
 				})
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), value)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), value)
 			return nil
 		},
 	}
@@ -199,7 +199,7 @@ new_value, status.`,
 						"status":        "would set",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would set %s: %q -> %q\n", key, current, value)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would set %s: %q -> %q\n", key, current, value)
 				return nil
 			}
 
@@ -214,7 +214,7 @@ new_value, status.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Set %s = %q\n", key, value)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Set %s = %q\n", key, value)
 			return nil
 		},
 	}
@@ -278,7 +278,7 @@ JSON fields (--json): key, status. With --dry-run: key, value, status.`,
 						"status": "would delete",
 					})
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Would delete %s (current value: %q)\n", key, value)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Would delete %s (current value: %q)\n", key, value)
 				return nil
 			}
 
@@ -293,7 +293,7 @@ JSON fields (--json): key, status. With --dry-run: key, value, status.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Deleted %s\n", key)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Deleted %s\n", key)
 			return nil
 		},
 	}

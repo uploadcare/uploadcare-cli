@@ -143,8 +143,8 @@ func TestResolveProjectCredentials_EnvVars(t *testing.T) {
 	l := newTestLoader(t, "")
 
 	// Bind env vars manually (normally done in Init)
-	l.v.BindEnv("public_key", "UPLOADCARE_PUBLIC_KEY")
-	l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
+	_ = l.v.BindEnv("public_key", "UPLOADCARE_PUBLIC_KEY")
+	_ = l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
 
 	t.Setenv("UPLOADCARE_PUBLIC_KEY", "env-pub")
 	t.Setenv("UPLOADCARE_SECRET_KEY", "env-sec")
@@ -270,7 +270,7 @@ projects:
     public_key: "prod-pub"
     secret_key: "prod-sec"
 `)
-	l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
+	_ = l.v.BindEnv("secret_key", "UPLOADCARE_SECRET_KEY")
 	t.Setenv("UPLOADCARE_SECRET_KEY", "env-sec")
 
 	creds, err := l.ResolveProjectCredentials(nil)
@@ -349,7 +349,7 @@ project_api_token: "my-bearer-token"
 
 func TestResolveProjectAPIToken_EnvVar(t *testing.T) {
 	l := newTestLoader(t, "")
-	l.v.BindEnv("project_api_token", "UPLOADCARE_PROJECT_API_TOKEN")
+	_ = l.v.BindEnv("project_api_token", "UPLOADCARE_PROJECT_API_TOKEN")
 	t.Setenv("UPLOADCARE_PROJECT_API_TOKEN", "env-token")
 
 	token := l.ResolveProjectAPIToken()
@@ -448,7 +448,7 @@ cdn_base: "https://override.example.com"
 
 func TestResolveCDNBase_EnvVar(t *testing.T) {
 	l := newTestLoader(t, "")
-	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
+	_ = l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
 	t.Setenv("UPLOADCARE_CDN_BASE", "https://env-cdn.example.com")
 
 	got := l.ResolveCDNBase(&ProjectCredentials{PublicKey: "demopublickey"}, nil)
@@ -547,7 +547,7 @@ projects:
     secret_key: "proj-sec"
     cdn_base: "https://my-project-cdn.example.com"
 `)
-	l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
+	_ = l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
 	t.Setenv("UPLOADCARE_CDN_BASE", "https://env-cdn.example.com")
 
 	creds, err := l.ResolveProjectCredentials(nil)
@@ -774,7 +774,7 @@ verbose: true
 
 func TestResolve_VerboseFromEnv(t *testing.T) {
 	l := newTestLoader(t, "")
-	l.v.BindEnv("verbose", "UPLOADCARE_VERBOSE")
+	_ = l.v.BindEnv("verbose", "UPLOADCARE_VERBOSE")
 	t.Setenv("UPLOADCARE_VERBOSE", "1")
 
 	cfg := l.Resolve()

@@ -164,12 +164,12 @@ func mapUploadGroupInfo(info upload.GroupInfo) *service.Group {
 	}
 	for _, f := range info.Files {
 		g.Files = append(g.Files, service.File{
-			UUID:     f.BasicFileInfo.ID,
-			Size:     int64(f.BasicFileInfo.Size),
-			Filename: f.BasicFileInfo.OriginalFileName,
-			MimeType: f.BasicFileInfo.MimeType,
-			IsImage:  f.BasicFileInfo.IsImage,
-			IsReady:  f.BasicFileInfo.IsReady,
+			UUID:     f.ID,
+			Size:     int64(f.Size),
+			Filename: f.OriginalFileName,
+			MimeType: f.MimeType,
+			IsImage:  f.IsImage,
+			IsReady:  f.IsReady,
 			IsStored: f.IsStored,
 		})
 	}

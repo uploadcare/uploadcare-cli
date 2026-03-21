@@ -82,7 +82,7 @@ func applyJQ(w io.Writer, data any, expr string) error {
 
 		// For strings, output raw (unquoted) text
 		if s, ok := v.(string); ok {
-			fmt.Fprintln(w, s)
+			_, _ = fmt.Fprintln(w, s)
 			continue
 		}
 
