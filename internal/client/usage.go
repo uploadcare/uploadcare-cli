@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/uploadcare/uploadcare-cli/internal/output"
@@ -36,7 +38,7 @@ func (s *usageService) Combined(ctx context.Context, pubKey string, from, to str
 		To:   to,
 	})
 	if err != nil {
-		return nil, err
+		return nil, wrapUsageAPIError(err, pubKey)
 	}
 
 	result := &service.UsageResult{
@@ -60,7 +62,7 @@ func (s *usageService) Metric(ctx context.Context, pubKey, metric string, from, 
 		To:   to,
 	})
 	if err != nil {
-		return nil, err
+		return nil, wrapUsageAPIError(err, pubKey)
 	}
 
 	result := &service.MetricResult{
@@ -75,6 +77,19 @@ func (s *usageService) Metric(ctx context.Context, pubKey, metric string, from, 
 		}
 	}
 	return result, nil
+}
+
+func wrapUsageAPIError(err error, pubKey string) error {
+	var apiErr ucare.ProjectAPIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.StatusCode {
+		case 400:
+			return fmt.Errorf("%w\nhint: ensure --to is before today (UTC) and the date range is at most 90 days", err)
+		case 404:
+			return fmt.Errorf("project %q not found", pubKey)
+		}
+	}
+	return err
 }
 
 var _ service.UsageService = (*usageService)(nil)

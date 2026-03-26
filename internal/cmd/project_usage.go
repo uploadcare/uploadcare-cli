@@ -34,6 +34,7 @@ func newProjectUsageCmd(usageSvc service.UsageService) *cobra.Command {
 		Long: `Get usage metrics for a project (by name or pub_key).
 
 Dates must be in YYYY-MM-DD format. Maximum range is 90 days.
+The --to date must be before today in UTC (the API does not accept today or future dates).
 
 Without --metric, returns all metrics (traffic, storage, operations).
 With --metric, returns daily data for a single metric.
@@ -51,12 +52,8 @@ Requires --project-api-token.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			pubKey := resolveProjectPubKey(cmd, args[0])
 
-			// Validate date format.
-			if _, err := time.Parse("2006-01-02", from); err != nil {
-				return ExitErrorf(2, "invalid --from date %q: use YYYY-MM-DD format", from)
-			}
-			if _, err := time.Parse("2006-01-02", to); err != nil {
-				return ExitErrorf(2, "invalid --to date %q: use YYYY-MM-DD format", to)
+			if err := validateUsageDateRange(from, to); err != nil {
+				return err
 			}
 
 			if metric != "" && !isValidUsageMetric(metric) {
@@ -151,4 +148,29 @@ func runMetricUsage(
 		table.AddRow(d.Date, strconv.FormatInt(d.Value, 10))
 	}
 	return formatter.Format(cmd.OutOrStdout(), table)
+}
+
+func validateUsageDateRange(from, to string) error {
+	fromDate, err := time.Parse("2006-01-02", from)
+	if err != nil {
+		return ExitErrorf(2, "invalid --from date %q: use YYYY-MM-DD format", from)
+	}
+	toDate, err := time.Parse("2006-01-02", to)
+	if err != nil {
+		return ExitErrorf(2, "invalid --to date %q: use YYYY-MM-DD format", to)
+	}
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	if !toDate.Before(today) {
+		return ExitErrorf(2, "invalid --to date %q: must be before today in UTC (%s)",
+			to, today.Format("2006-01-02"))
+	}
+	if !fromDate.Before(toDate) {
+		return ExitErrorf(2, "invalid date range: --from (%s) must be before --to (%s)", from, to)
+	}
+	if toDate.Sub(fromDate) > 90*24*time.Hour {
+		days := int(toDate.Sub(fromDate).Hours() / 24)
+		return ExitErrorf(2, "invalid date range: %d days exceeds maximum of 90", days)
+	}
+	return nil
 }

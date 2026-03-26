@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/uploadcare/uploadcare-cli/internal/service"
@@ -621,7 +622,7 @@ func TestUsage_Combined_Human(t *testing.T) {
 	}
 
 	root := newTestRootWithProject(nil, nil, nil, mock)
-	stdout, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2026-03-01", "--to", "2026-03-31")
+	stdout, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2025-02-01", "--to", "2025-03-01")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -646,7 +647,7 @@ func TestUsage_Combined_JSON(t *testing.T) {
 	}
 
 	root := newTestRootWithProject(nil, nil, nil, mock)
-	stdout, _, err := executeCommand(t, root, "--json", "all", "project", "usage", "abc123", "--from", "2026-03-01", "--to", "2026-03-31")
+	stdout, _, err := executeCommand(t, root, "--json", "all", "project", "usage", "abc123", "--from", "2025-02-01", "--to", "2025-03-01")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -677,7 +678,7 @@ func TestUsage_Metric_Human(t *testing.T) {
 	}
 
 	root := newTestRootWithProject(nil, nil, nil, mock)
-	stdout, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2026-03-01", "--to", "2026-03-31", "--metric", "traffic")
+	stdout, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2025-02-01", "--to", "2025-03-01", "--metric", "traffic")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -705,7 +706,7 @@ func TestUsage_InvalidDate(t *testing.T) {
 func TestUsage_InvalidMetric(t *testing.T) {
 	mock := &mockUsageService{}
 	root := newTestRootWithProject(nil, nil, nil, mock)
-	_, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2026-03-01", "--to", "2026-03-31", "--metric", "invalid")
+	_, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2025-02-01", "--to", "2025-03-01", "--metric", "invalid")
 	if err == nil {
 		t.Fatal("expected error for invalid metric")
 	}
@@ -717,5 +718,71 @@ func TestUsage_MissingRequiredFlags(t *testing.T) {
 	_, _, err := executeCommand(t, root, "project", "usage", "abc123")
 	if err == nil {
 		t.Fatal("expected error when --from/--to are missing")
+	}
+}
+
+func TestUsage_ToDateIsToday(t *testing.T) {
+	mock := &mockUsageService{}
+	root := newTestRootWithProject(nil, nil, nil, mock)
+	today := time.Now().UTC().Format("2006-01-02")
+	_, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2026-01-01", "--to", today)
+	if err == nil {
+		t.Fatal("expected error when --to is today")
+	}
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) || exitErr.Code != 2 {
+		t.Errorf("expected ExitError with code 2, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "before today") {
+		t.Errorf("expected error to mention 'before today', got %q", err.Error())
+	}
+}
+
+func TestUsage_ToDateInFuture(t *testing.T) {
+	mock := &mockUsageService{}
+	root := newTestRootWithProject(nil, nil, nil, mock)
+	future := time.Now().UTC().AddDate(0, 1, 0).Format("2006-01-02")
+	_, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2026-01-01", "--to", future)
+	if err == nil {
+		t.Fatal("expected error when --to is in the future")
+	}
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) || exitErr.Code != 2 {
+		t.Errorf("expected ExitError with code 2, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "before today") {
+		t.Errorf("expected error to mention 'before today', got %q", err.Error())
+	}
+}
+
+func TestUsage_FromAfterTo(t *testing.T) {
+	mock := &mockUsageService{}
+	root := newTestRootWithProject(nil, nil, nil, mock)
+	_, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2026-03-15", "--to", "2026-03-01")
+	if err == nil {
+		t.Fatal("expected error when --from is after --to")
+	}
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) || exitErr.Code != 2 {
+		t.Errorf("expected ExitError with code 2, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "must be before") {
+		t.Errorf("expected error to mention 'must be before', got %q", err.Error())
+	}
+}
+
+func TestUsage_RangeExceeds90Days(t *testing.T) {
+	mock := &mockUsageService{}
+	root := newTestRootWithProject(nil, nil, nil, mock)
+	_, _, err := executeCommand(t, root, "project", "usage", "abc123", "--from", "2025-01-01", "--to", "2025-06-01")
+	if err == nil {
+		t.Fatal("expected error when range exceeds 90 days")
+	}
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) || exitErr.Code != 2 {
+		t.Errorf("expected ExitError with code 2, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "90") {
+		t.Errorf("expected error to mention '90', got %q", err.Error())
 	}
 }

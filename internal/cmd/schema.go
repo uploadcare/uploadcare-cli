@@ -80,6 +80,7 @@ No authentication required.`,
 					"All timestamps are in RFC 3339 / UTC format.",
 					"For batch operations (file store, file delete), exit code 1 means partial success — check the 'problems' field in JSON output.",
 					"When piping between commands, use --json uuid or --jq '.uuid' to emit just the UUID for --from-stdin consumption.",
+				"For 'project usage': --to must be strictly before today in UTC. Using today's date or a future date will return a validation error.",
 				},
 				URLAPI: buildURLAPISchema(),
 			}
