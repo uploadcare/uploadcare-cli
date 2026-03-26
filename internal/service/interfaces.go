@@ -209,12 +209,13 @@ type Collaborator struct {
 
 // ManagedProject represents a project from the Project API.
 type ManagedProject struct {
-	PubKey           string    `json:"pub_key"`
-	Name             string    `json:"name"`
-	FilesizeLimit    *int64    `json:"filesize_limit"`
-	AutostoreEnabled bool      `json:"autostore_enabled"`
-	DatetimeCreated  time.Time `json:"created"`
-	IsDeleted        bool      `json:"is_deleted"`
+	PubKey               string `json:"pub_key"`
+	Name                 string `json:"name"`
+	IsBlocked            *bool  `json:"is_blocked,omitempty"`
+	IsSearchIndexAllowed *bool  `json:"is_search_index_allowed,omitempty"`
+	IsSharedProject      bool   `json:"is_shared_project,omitempty"`
+	FilesizeLimit        *int64 `json:"filesize_limit"`
+	AutostoreEnabled     *bool  `json:"autostore_enabled,omitempty"`
 }
 
 // ProjectListOptions specifies parameters for listing projects.
@@ -227,6 +228,8 @@ type ProjectListResult struct {
 	Projects []ManagedProject `json:"results"`
 	Next     string           `json:"next"`
 	Previous string           `json:"previous"`
+	Total    int              `json:"total"`
+	PerPage  int              `json:"per_page"`
 }
 
 // ProjectCreateParams configures project creation.
@@ -245,8 +248,9 @@ type ProjectUpdateParams struct {
 
 // Secret represents an API secret (list view — hints only, not full keys).
 type Secret struct {
-	ID   string `json:"id"`
-	Hint string `json:"hint"`
+	ID         string  `json:"id"`
+	Hint       string  `json:"hint"`
+	LastUsedAt *string `json:"last_used_at,omitempty"`
 }
 
 // SecretCreateResult is the response from creating a new secret.
@@ -257,16 +261,29 @@ type SecretCreateResult struct {
 
 // UsageResult is combined usage metrics for a project.
 type UsageResult struct {
-	Traffic    int64 `json:"traffic"`
-	Storage    int64 `json:"storage"`
-	Operations int64 `json:"operations"`
+	Units map[string]string `json:"units"`
+	Data  []UsageDayMetrics `json:"data"`
+}
+
+// UsageDayMetrics holds combined daily usage values.
+type UsageDayMetrics struct {
+	Date       string `json:"date"`
+	Traffic    int64  `json:"traffic"`
+	Storage    int64  `json:"storage"`
+	Operations int64  `json:"operations"`
 }
 
 // MetricResult is a single usage metric with time series.
 type MetricResult struct {
-	Metric string           `json:"metric"`
-	Total  int64            `json:"total"`
-	Points map[string]int64 `json:"points"`
+	Metric string          `json:"metric"`
+	Unit   string          `json:"unit"`
+	Data   []MetricDayData `json:"data"`
+}
+
+// MetricDayData holds a single date/value pair in usage data.
+type MetricDayData struct {
+	Date  string `json:"date"`
+	Value int64  `json:"value"`
 }
 
 // MimeType represents an available MIME type.
@@ -352,8 +369,8 @@ type SecretService interface {
 
 // UsageService provides usage metrics via the Project API.
 type UsageService interface {
-	Combined(ctx context.Context, pubKey string, from, to time.Time) (*UsageResult, error)
-	Metric(ctx context.Context, pubKey, metric string, from, to time.Time) (*MetricResult, error)
+	Combined(ctx context.Context, pubKey string, from, to string) (*UsageResult, error)
+	Metric(ctx context.Context, pubKey, metric string, from, to string) (*MetricResult, error)
 }
 
 // MimeTypeService provides MIME type listing via the Project API.

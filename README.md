@@ -7,6 +7,7 @@ A non-interactive command-line interface for the [Uploadcare](https://uploadcare
 ## Features
 
 - **File management** — upload, list, copy, store, and delete files
+- **Project management** — create, update, delete projects; manage API secrets and usage metrics
 - **JSON & NDJSON output** — structured output with field filtering and `jq` support
 - **Stdin piping** — compose commands for batch operations
 - **Dry-run mode** — preview destructive operations before executing
@@ -189,6 +190,18 @@ uploadcare
 │   ├── create            Create a webhook
 │   ├── update            Update a webhook
 │   └── delete            Delete a webhook
+├── project
+│   ├── info              Get project details
+│   ├── list              List all projects
+│   ├── create            Create a new project
+│   ├── update            Update project settings
+│   ├── delete            Delete a project
+│   ├── use               Switch active project
+│   ├── secret
+│   │   ├── list          List API secrets
+│   │   ├── create        Create a new API secret
+│   │   └── delete        Delete an API secret
+│   └── usage             Get usage metrics
 ├── url-api               URL API reference (CDN transformations)
 ├── api-schema            Print machine-readable CLI schema as JSON
 ├── version               Print CLI version

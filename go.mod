@@ -9,6 +9,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	github.com/uploadcare/uploadcare-go/v2 v2.0.0
+	go.yaml.in/yaml/v3 v3.0.4
 )
 
 require (
@@ -25,9 +26,8 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 )
 
-replace github.com/uploadcare/uploadcare-go/v2 => github.com/uploadcare/uploadcare-go/v2 v2.0.0-20260316072041-87a495265d71
+replace github.com/uploadcare/uploadcare-go/v2 => github.com/uploadcare/uploadcare-go/v2 v2.0.0-20260326133346-236f3b01d0fb

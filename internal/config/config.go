@@ -288,6 +288,16 @@ func (l *Loader) directKeysFromFlagOrEnv() bool {
 		os.Getenv("UPLOADCARE_PUBLIC_KEY") != "" || os.Getenv("UPLOADCARE_SECRET_KEY") != ""
 }
 
+// LookupProjectPubKey returns the public_key for a named project in config.
+// Returns ErrProjectNotFound if the name is not in the projects map.
+func (l *Loader) LookupProjectPubKey(name string) (string, error) {
+	creds, err := l.lookupProject(name)
+	if err != nil {
+		return "", err
+	}
+	return creds.PublicKey, nil
+}
+
 // lookupProject looks up a named project in the config file's projects map.
 func (l *Loader) lookupProject(name string) (*ProjectCredentials, error) {
 	projects := l.v.GetStringMap("projects")

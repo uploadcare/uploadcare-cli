@@ -97,6 +97,7 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 	rootCmd.AddCommand(newWebhookCmd(nil))
 	rootCmd.AddCommand(newConvertCmd(nil))
 	rootCmd.AddCommand(newAddonCmd(nil))
+	rootCmd.AddCommand(newProjectCmd(nil, nil, nil, nil))
 	rootCmd.AddCommand(newURLAPICmd())
 
 	return rootCmd
