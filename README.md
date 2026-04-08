@@ -22,6 +22,12 @@ A non-interactive command-line interface for the [Uploadcare](https://uploadcare
 curl -fsSL https://raw.githubusercontent.com/uploadcare/uploadcare-cli/main/scripts/install.sh | sh
 ```
 
+The install script supports environment variables: `VERSION` (e.g., `0.1.0`), `INSTALL_DIR` (default: `/usr/local/bin`), and `UNINSTALL=1` to remove the binary. Pass them to `sh`:
+
+```bash
+curl -fsSL <install-url> | VERSION=0.1.0 sh
+```
+
 ### Download from GitHub Releases
 
 Pre-built binaries for all platforms are available on the [Releases page](https://github.com/uploadcare/uploadcare-cli/releases).
