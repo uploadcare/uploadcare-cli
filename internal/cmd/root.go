@@ -18,7 +18,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 Authenticate using API keys (flags, env vars, or config file):
   --public-key / UPLOADCARE_PUBLIC_KEY
   --secret-key / UPLOADCARE_SECRET_KEY
-Or use a named project from ~/.config/uploadcare/cli.yaml:
+Or use a named project from ~/.uploadcare/config.yaml:
   --project <name> / UPLOADCARE_PROJECT
 
 Output modes:
