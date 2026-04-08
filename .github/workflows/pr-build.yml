@@ -1,0 +1,38 @@
+name: PR Build
+
+on:
+  pull_request:
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: uploadcare-cli-binaries
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          retention-days: 30
+

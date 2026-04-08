@@ -1,0 +1,144 @@
+name: PR Comment
+
+on:
+  workflow_run:
+    workflows: ["PR Build"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  comment:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binaries artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: uploadcare-cli-binaries
+          path: binaries
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const headSha = context.payload.workflow_run.head_sha;
+            const headRepo = context.payload.workflow_run.head_repository;
+
+            // Try workflow_run.pull_requests first (populated for same-repo PRs)
+            let prNumber = context.payload.workflow_run.pull_requests?.[0]?.number;
+
+            // For forked PRs, pull_requests is empty — look up by head owner:branch
+            if (!prNumber) {
+              const { data: pulls } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                head: `${headRepo.owner.login}:${context.payload.workflow_run.head_branch}`,
+              });
+              if (pulls.length === 0) {
+                core.warning(`No open PR found for ${headRepo.owner.login}:${context.payload.workflow_run.head_branch} — skipping comment`);
+                return;
+              }
+              prNumber = pulls[0].number;
+            }
+
+            // Skip if this build is no longer the PR head (stale build race)
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            if (pr.head.sha !== headSha) {
+              core.info(`Build is for ${headSha.substring(0, 7)} but PR head is now ${pr.head.sha.substring(0, 7)} — skipping stale comment`);
+              return;
+            }
+
+            // List files from the downloaded artifact, sanitize names
+            const safeNamePattern = /^[\w.\-]+\.(tar\.gz|zip)$/;
+            const files = fs.readdirSync('binaries')
+              .filter(f => safeNamePattern.test(f))
+              .sort();
+
+            const buildRunId = context.payload.workflow_run.id;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${buildRunId}#artifacts`;
+            const shortSha = headSha.substring(0, 7);
+            const now = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
+
+            const newRow = `| \`${shortSha}\` | [Download](${runUrl}) | ${now} |`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('PR Build Artifacts')
+            );
+
+            let historyRows = [];
+            if (botComment) {
+              // Extract existing table rows (skip header and separator)
+              const lines = botComment.body.split('\n');
+              historyRows = lines.filter(l =>
+                l.startsWith('|') && !l.startsWith('| Commit') && !l.startsWith('| ---')
+              );
+            }
+
+            // Prepend new build (latest first)
+            historyRows.unshift(newRow);
+
+            const platformList = files.map(f => `- \`${f}\``).join('\n');
+
+            const body = [
+              '## PR Build Artifacts',
+              '',
+              '| Commit | Build | Time (UTC) |',
+              '| --- | --- | --- |',
+              ...historyRows,
+              '',
+              '<details>',
+              '<summary>Available platforms</summary>',
+              '',
+              platformList,
+              '',
+              '</details>',
+              '',
+              '<details>',
+              '<summary>How to install</summary>',
+              '',
+              '1. Click **Download** for the build you want',
+              '2. Download **uploadcare-cli-binaries** zip',
+              '3. Unzip it — you\'ll find per-platform archives inside',
+              '4. Extract the archive for your platform (e.g. `tar xzf uploadcare-cli_*_darwin_arm64.tar.gz`)',
+              '5. Run `./uploadcare`',
+              '',
+              '</details>',
+            ].join('\n');
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
