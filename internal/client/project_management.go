@@ -19,6 +19,7 @@ type projectManagementService struct {
 func NewProjectManagementService(token string, httpClient *http.Client, verbose *output.VerboseLogger) (service.ProjectManagementService, error) {
 	conf := &ucare.Config{
 		HTTPClient: httpClient,
+		UserAgent:  UserAgent,
 	}
 	client, err := ucare.NewBearerClient(token, conf)
 	if err != nil {

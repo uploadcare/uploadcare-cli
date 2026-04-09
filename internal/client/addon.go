@@ -26,6 +26,7 @@ func NewAddonService(publicKey, secretKey string, httpClient *http.Client, verbo
 		APIVersion:             ucare.APIv07,
 		SignBasedAuthentication: true,
 		HTTPClient:             httpClient,
+		UserAgent:              UserAgent,
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {

@@ -21,6 +21,7 @@ type usageService struct {
 func NewUsageService(token string, httpClient *http.Client, verbose *output.VerboseLogger) (service.UsageService, error) {
 	conf := &ucare.Config{
 		HTTPClient: httpClient,
+		UserAgent:  UserAgent,
 	}
 	client, err := ucare.NewBearerClient(token, conf)
 	if err != nil {

@@ -35,6 +35,7 @@ func NewFileService(publicKey, secretKey, cdnBase string, httpClient *http.Clien
 		SignBasedAuthentication: true,
 		CDNBase:                cdnBase,
 		HTTPClient:             httpClient,
+		UserAgent:              UserAgent,
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
