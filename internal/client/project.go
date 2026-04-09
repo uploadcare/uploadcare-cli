@@ -25,6 +25,7 @@ func NewProjectService(publicKey, secretKey string, httpClient *http.Client, ver
 		APIVersion:             ucare.APIv07,
 		SignBasedAuthentication: true,
 		HTTPClient:             httpClient,
+		UserAgent:              UserAgent,
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {

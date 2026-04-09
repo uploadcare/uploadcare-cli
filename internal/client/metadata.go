@@ -25,6 +25,7 @@ func NewMetadataService(publicKey, secretKey string, httpClient *http.Client, ve
 		APIVersion:             ucare.APIv07,
 		SignBasedAuthentication: true,
 		HTTPClient:             httpClient,
+		UserAgent:              UserAgent,
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {

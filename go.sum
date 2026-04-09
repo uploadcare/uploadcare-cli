@@ -53,8 +53,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8=
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
-github.com/uploadcare/uploadcare-go/v2 v2.0.0-20260326133346-236f3b01d0fb h1:3a/bBxrBduudEHlXezVvZIkEpc0xUdbqhIKOU3Ag2B0=
-github.com/uploadcare/uploadcare-go/v2 v2.0.0-20260326133346-236f3b01d0fb/go.mod h1:nVtcYFEeUnxMjXbEsXzDefko4MdJpXjzBGRJtxwoCjU=
+github.com/uploadcare/uploadcare-go/v2 v2.0.0-20260409071548-d58ba67da138 h1:Aoe226G5RvIEdIZkk1LbdIPZ09X62gDTq6bh4/zlSog=
+github.com/uploadcare/uploadcare-go/v2 v2.0.0-20260409071548-d58ba67da138/go.mod h1:nVtcYFEeUnxMjXbEsXzDefko4MdJpXjzBGRJtxwoCjU=
 go.yaml.in/yaml/v3 v3.0.4 h1:tfq32ie2Jv2UxXFdLJdh3jXuOzWiL1fo0bu/FbuKpbc=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
