@@ -117,7 +117,7 @@ func newFileListCmd(fileSvc service.FileService) *cobra.Command {
 		Short: "List files in project",
 		Long: `List files in the current Uploadcare project with pagination and filtering.
 
-Returns files sorted by --ordering (default: datetime_uploaded ascending).
+Returns files sorted by --ordering (default: datetime_uploaded descending).
 Prefix the ordering field with - for descending (e.g., -datetime_uploaded).
 
 By default returns one page of up to --limit files (default: 100).
@@ -210,7 +210,7 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 	}
 
 	f := cmd.Flags()
-	f.StringVar(&ordering, "ordering", "datetime_uploaded", "Sort order (prefix - for descending)")
+	f.StringVar(&ordering, "ordering", "-datetime_uploaded", "Sort order (prefix - for descending)")
 	f.IntVar(&limit, "limit", 100, "Number of files per page")
 	f.StringVar(&startingPoint, "starting-point", "", "Starting point (RFC3339 datetime)")
 	f.StringVar(&stored, "stored", "", "Filter by stored status (true/false)")

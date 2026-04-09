@@ -425,6 +425,27 @@ func TestFileList_PageAll_Quiet(t *testing.T) {
 	}
 }
 
+func TestFileList_DefaultOrdering(t *testing.T) {
+	var capturedOpts service.FileListOptions
+
+	mock := &mockFileService{
+		listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+			capturedOpts = opts
+			return &service.FileListResult{}, nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	_, _, err := executeCommand(t, root, "file", "list")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if capturedOpts.Ordering != "-datetime_uploaded" {
+		t.Errorf("default ordering = %q, want %q", capturedOpts.Ordering, "-datetime_uploaded")
+	}
+}
+
 func TestFileList_Options(t *testing.T) {
 	var capturedOpts service.FileListOptions
 
