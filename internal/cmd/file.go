@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -92,7 +94,23 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 				return formatter.Format(cmd.OutOrStdout(), file)
 			}
 
-			return formatter.Format(cmd.OutOrStdout(), fileInfoTable(file))
+			if err := formatter.Format(cmd.OutOrStdout(), fileInfoTable(file)); err != nil {
+				return err
+			}
+			if !opts.Quiet && len(file.AppData) > 0 {
+				w := cmd.OutOrStdout()
+				var buf bytes.Buffer
+				if err := json.Indent(&buf, file.AppData, "", "  "); err != nil {
+					if _, err := fmt.Fprintf(w, "\nAppData:\n%s\n", string(file.AppData)); err != nil {
+						return err
+					}
+				} else {
+					if _, err := fmt.Fprintf(w, "\nAppData:\n%s\n", buf.String()); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
 		},
 	}
 
@@ -183,7 +201,7 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 			}
 
 			if pageAll {
-				return runFileListAll(cmd, svc, listOpts, opts)
+				return runFileListAll(cmd, svc, listOpts, opts, includeAppData)
 			}
 
 			result, err := svc.List(cmd.Context(), listOpts)
@@ -195,15 +213,24 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 				return formatter.Format(cmd.OutOrStdout(), result.Files)
 			}
 
-			table := output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED")
+			var table *output.TableData
+			if includeAppData {
+				table = output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED", "APPDATA")
+			} else {
+				table = output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED")
+			}
 			for _, f := range result.Files {
-				table.AddRow(
+				row := []string{
 					f.UUID,
 					strconv.FormatInt(f.Size, 10),
 					f.Filename,
 					strconv.FormatBool(f.IsStored),
 					formatTime(f.DatetimeUploaded),
-				)
+				}
+				if includeAppData {
+					row = append(row, truncateAppData(f.AppData, 50))
+				}
+				table.AddRow(row...)
 			}
 			return formatter.Format(cmd.OutOrStdout(), table)
 		},
@@ -221,7 +248,7 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 	return cmd
 }
 
-func runFileListAll(cmd *cobra.Command, svc service.FileService, listOpts service.FileListOptions, opts output.FormatOptions) error {
+func runFileListAll(cmd *cobra.Command, svc service.FileService, listOpts service.FileListOptions, opts output.FormatOptions, includeAppData bool) error {
 	if opts.Quiet {
 		return svc.Iterate(cmd.Context(), listOpts, func(f service.File) error {
 			return nil
@@ -232,6 +259,12 @@ func runFileListAll(cmd *cobra.Command, svc service.FileService, listOpts servic
 	return svc.Iterate(cmd.Context(), listOpts, func(f service.File) error {
 		if opts.JSON {
 			return output.NDJSONLine(w, &f, opts.Fields, opts.JQ)
+		}
+		if includeAppData {
+			_, err := fmt.Fprintf(w, "%s\t%d\t%s\t%v\t%s\t%s\n",
+				f.UUID, f.Size, f.Filename, f.IsStored, formatTime(f.DatetimeUploaded),
+				truncateAppData(f.AppData, 50))
+			return err
 		}
 		_, err := fmt.Fprintf(w, "%s\t%d\t%s\t%v\t%s\n",
 			f.UUID, f.Size, f.Filename, f.IsStored, formatTime(f.DatetimeUploaded))
@@ -257,6 +290,17 @@ func fileInfoTable(file *service.File) *output.TableData {
 	}
 	table.AddRow("URL:", file.OriginalFileURL)
 	return table
+}
+
+func truncateAppData(data json.RawMessage, maxLen int) string {
+	if len(data) == 0 {
+		return ""
+	}
+	s := string(data)
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
 
 func formatTime(t time.Time) string {

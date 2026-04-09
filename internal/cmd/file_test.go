@@ -463,3 +463,157 @@ func TestFileList_Options(t *testing.T) {
 		t.Error("include appdata should be true")
 	}
 }
+
+func testFileWithAppData() *service.File {
+	f := testFile()
+	f.AppData = json.RawMessage(`{"uc_clamav_virus_scan":{"data":{"infected":false},"version":"1.0.0"}}`)
+	return f
+}
+
+func TestFileInfo_TableWithAppData(t *testing.T) {
+	mock := &mockFileService{
+		infoFunc: func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
+			return testFileWithAppData(), nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "file", "info", "--include-appdata", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(stdout, "AppData:") {
+		t.Errorf("output should contain AppData section\ngot:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "uc_clamav_virus_scan") {
+		t.Errorf("output should contain appdata content\ngot:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, `"infected": false`) {
+		t.Errorf("appdata should be pretty-printed with indentation\ngot:\n%s", stdout)
+	}
+}
+
+func TestFileInfo_TableWithAppData_Quiet(t *testing.T) {
+	mock := &mockFileService{
+		infoFunc: func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
+			return testFileWithAppData(), nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "--quiet", "file", "info", "--include-appdata", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if strings.Contains(stdout, "AppData:") {
+		t.Errorf("--quiet should suppress AppData section\ngot:\n%s", stdout)
+	}
+}
+
+func TestFileInfo_TableWithoutAppData(t *testing.T) {
+	mock := &mockFileService{
+		infoFunc: func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
+			return testFile(), nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "file", "info", "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if strings.Contains(stdout, "AppData:") {
+		t.Errorf("output should not contain AppData section when flag is not set\ngot:\n%s", stdout)
+	}
+}
+
+func TestFileList_TableWithAppData(t *testing.T) {
+	f := testFileWithAppData()
+	mock := &mockFileService{
+		listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+			return &service.FileListResult{
+				Files: []service.File{*f},
+				Total: 1,
+			}, nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "file", "list", "--include-appdata")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(stdout, "APPDATA") {
+		t.Errorf("output should contain APPDATA header\ngot:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "uc_clamav_virus_scan") {
+		t.Errorf("output should contain appdata content\ngot:\n%s", stdout)
+	}
+}
+
+func TestFileList_TableWithoutAppData(t *testing.T) {
+	mock := &mockFileService{
+		listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+			return &service.FileListResult{
+				Files: []service.File{*testFile()},
+				Total: 1,
+			}, nil
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "file", "list")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if strings.Contains(stdout, "APPDATA") {
+		t.Errorf("output should not contain APPDATA column when flag is not set\ngot:\n%s", stdout)
+	}
+}
+
+func TestFileList_PageAll_TableWithAppData(t *testing.T) {
+	f := testFileWithAppData()
+	mock := &mockFileService{
+		iterateFunc: func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error {
+			return fn(*f)
+		},
+	}
+
+	root := newTestRoot(mock)
+	stdout, _, err := executeCommand(t, root, "file", "list", "--page-all", "--include-appdata")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(stdout, "uc_clamav_virus_scan") {
+		t.Errorf("streaming output should contain appdata\ngot:\n%s", stdout)
+	}
+}
+
+func TestTruncateAppData(t *testing.T) {
+	tests := []struct {
+		name   string
+		data   json.RawMessage
+		maxLen int
+		want   string
+	}{
+		{"empty", nil, 50, ""},
+		{"short", json.RawMessage(`{"ok":true}`), 50, `{"ok":true}`},
+		{"exact", json.RawMessage(`12345`), 5, `12345`},
+		{"over", json.RawMessage(`{"uc_clamav_virus_scan":{"data":{"infected":false}}}`), 20, `{"uc_clamav_virus_sc...`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateAppData(tt.data, tt.maxLen)
+			if got != tt.want {
+				t.Errorf("truncateAppData(%q, %d) = %q, want %q", string(tt.data), tt.maxLen, got, tt.want)
+			}
+		})
+	}
+}
