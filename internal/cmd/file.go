@@ -160,10 +160,7 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 
   # Delete all unstored files
   uploadcare file list --page-all --stored false --json uuid \
-    | uploadcare file delete --from-stdin
-
-  # Count all files in the project
-  uploadcare file list --page-all --json uuid | wc -l`,
+    | uploadcare file delete --from-stdin`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc := fileSvc
