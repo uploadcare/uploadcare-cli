@@ -66,11 +66,12 @@ func TestAPISchema_CommandsHaveJSONFields(t *testing.T) {
 
 	// Commands that must have json_fields
 	expectFields := map[string][]string{
-		"file info":   {"uuid", "filename", "size"},
-		"file list":   {"uuid", "filename", "size"},
-		"file upload": {"uuid", "filename"},
-		"file store":  {"results", "problems"},
-		"version":     {"version", "commit"},
+		"file info":     {"uuid", "filename", "size"},
+		"file list":     {"uuid", "filename", "size"},
+		"file upload":   {"uuid", "filename"},
+		"file download": {"uuid", "path", "source_url", "status"},
+		"file store":    {"results", "problems"},
+		"version":       {"version", "commit"},
 	}
 
 	cmdMap := make(map[string][]string)
@@ -105,6 +106,7 @@ func TestJSONFieldsForCommand(t *testing.T) {
 		{"file store", false, []string{"results", "problems"}},
 		{"file delete", false, []string{"results", "problems"}},
 		{"file remote-copy", false, []string{"type", "result", "already_exists"}},
+		{"file download", false, []string{"uuid", "path", "source_url", "status"}},
 		{"group info", false, []string{"id", "cdn_url", "files"}},
 		{"webhook list", false, []string{"id", "target_url", "event"}},
 		{"version", false, []string{"version", "commit", "go_version"}},

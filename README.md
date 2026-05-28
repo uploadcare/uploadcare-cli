@@ -62,6 +62,10 @@ uploadcare file info <uuid> --json all
 # Delete all unstored files (piping)
 uploadcare file list --page-all --stored false --json uuid \
   | uploadcare file delete --from-stdin
+
+# Mirror all stored files to ./backup with 8 parallel workers
+uploadcare file list --page-all --stored true --json uuid \
+  | uploadcare file download --from-stdin --output-dir ./backup --parallel 8
 ```
 
 ## Configuration
@@ -174,7 +178,8 @@ uploadcare
 │   ├── store             Store file(s)
 │   ├── delete            Delete file(s)
 │   ├── local-copy        Copy file within Uploadcare storage
-│   └── remote-copy       Copy file to remote storage
+│   ├── remote-copy       Copy file to remote storage
+│   └── download          Download file(s) from the CDN to local disk
 ├── metadata
 │   ├── list              List all metadata keys for a file
 │   ├── get               Get a metadata value by key

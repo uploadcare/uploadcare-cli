@@ -4,8 +4,43 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"strings"
 	"time"
 )
+
+// ApplyCDNEffects splices an Uploadcare CDN operations path into
+// originalFileURL. Uploadcare expects operations directly after /:uuid/
+// and before the optional /:filename suffix, e.g.
+//
+//	in:      https://ucarecdn.com/<uuid>/photo.jpg
+//	effects: resize/200x/
+//	out:     https://ucarecdn.com/<uuid>/-/resize/200x/photo.jpg
+//
+// Returns the URL unchanged when effects is empty or the URL doesn't
+// contain the uuid (defensive fallback).
+func ApplyCDNEffects(originalFileURL, uuid, effects string) string {
+	if originalFileURL == "" || effects == "" {
+		return originalFileURL
+	}
+	eff := strings.TrimPrefix(effects, "-/")
+	eff = strings.Trim(eff, "/")
+	if eff == "" {
+		return originalFileURL
+	}
+
+	anchor := "/" + uuid + "/"
+	if i := strings.Index(originalFileURL, anchor); i >= 0 {
+		split := i + len(anchor)
+		return originalFileURL[:split] + "-/" + eff + "/" + originalFileURL[split:]
+	}
+	// URL ends with /<uuid> (no trailing slash, no filename).
+	if strings.HasSuffix(originalFileURL, "/"+uuid) {
+		return originalFileURL + "/-/" + eff + "/"
+	}
+	// Couldn't anchor on uuid — leave URL untouched rather than
+	// constructing a likely-broken one.
+	return originalFileURL
+}
 
 // --- Domain types ---
 
@@ -71,6 +106,26 @@ type URLUploadParams struct {
 	Timeout         time.Duration
 	CheckDuplicates bool
 	SaveDuplicates  bool
+}
+
+// DownloadParams configures a file download from the CDN.
+type DownloadParams struct {
+	UUID     string
+	Out      io.Writer
+	Effects  string // optional, applied to images only
+	Progress func(bytesSoFar, totalBytes int64)
+	// Resolved is an optional, pre-fetched File. When supplied, the
+	// service skips its internal Info call and uses these fields to
+	// compute the CDN URL — useful when the caller has already fetched
+	// metadata (e.g. for path resolution or duplicate-target detection).
+	Resolved *File
+}
+
+// DownloadResult is the response from a successful download.
+type DownloadResult struct {
+	UUID        string
+	BytesCopied int64
+	SourceURL   string
 }
 
 // LocalCopyParams configures a local (same-storage) copy.
@@ -305,6 +360,7 @@ type FileService interface {
 	Delete(ctx context.Context, uuids []string) (*BatchResult, error)
 	LocalCopy(ctx context.Context, params LocalCopyParams) (*File, error)
 	RemoteCopy(ctx context.Context, params RemoteCopyParams) (*RemoteCopyResult, error)
+	Download(ctx context.Context, params DownloadParams) (*DownloadResult, error)
 }
 
 // MetadataService provides file metadata CRUD operations.

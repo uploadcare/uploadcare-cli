@@ -35,6 +35,7 @@ stdin (--from-stdin), and can be piped from "file list --page-all".`,
 	cmd.AddCommand(newFileDeleteCmd(fileSvc))
 	cmd.AddCommand(newFileLocalCopyCmd(fileSvc))
 	cmd.AddCommand(newFileRemoteCopyCmd(fileSvc))
+	cmd.AddCommand(newFileDownloadCmd(fileSvc))
 
 	return cmd
 }

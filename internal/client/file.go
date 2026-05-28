@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 type fileService struct {
 	sdkFileSvc   file.Service
 	sdkUploadSvc upload.Service
+	httpClient   *http.Client
 	verbose      *output.VerboseLogger
 }
 
@@ -44,6 +46,7 @@ func NewFileService(publicKey, secretKey, cdnBase string, httpClient *http.Clien
 	return &fileService{
 		sdkFileSvc:   file.NewService(client),
 		sdkUploadSvc: upload.NewService(client),
+		httpClient:   httpClient,
 		verbose:      verbose,
 	}, nil
 }
@@ -362,6 +365,84 @@ func (s *fileService) RemoteCopy(ctx context.Context, params service.RemoteCopyP
 		result.Result = *copyInfo.Result
 	}
 	return result, nil
+}
+
+func (s *fileService) Download(ctx context.Context, params service.DownloadParams) (*service.DownloadResult, error) {
+	f := params.Resolved
+	if f == nil {
+		info, err := s.sdkFileSvc.Info(ctx, params.UUID, nil)
+		if err != nil {
+			return nil, err
+		}
+		f = mapFileInfo(info)
+	}
+	if f.OriginalFileURL == "" {
+		return nil, fmt.Errorf("file %s has no original_file_url (likely removed)", params.UUID)
+	}
+
+	srcURL := f.OriginalFileURL
+	if params.Effects != "" && f.IsImage {
+		srcURL = service.ApplyCDNEffects(srcURL, f.UUID, params.Effects)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srcURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := s.httpClient
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+
+	s.verbose.Infof("downloading %s -> writer (size %d, effects=%q, image=%v)", params.UUID, f.Size, params.Effects, f.IsImage)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("download %s: unexpected status %d", srcURL, resp.StatusCode)
+	}
+
+	var src io.Reader = resp.Body
+	if params.Progress != nil {
+		total := f.Size
+		if resp.ContentLength > 0 {
+			total = resp.ContentLength
+		}
+		src = &progressReader{r: resp.Body, total: total, cb: params.Progress}
+	}
+
+	n, err := io.Copy(params.Out, src)
+	if err != nil {
+		return nil, err
+	}
+	return &service.DownloadResult{
+		UUID:        params.UUID,
+		BytesCopied: n,
+		SourceURL:   srcURL,
+	}, nil
+}
+
+// progressReader wraps an io.Reader, invoking a callback after each read.
+type progressReader struct {
+	r        io.Reader
+	total    int64
+	soFar    int64
+	cb       func(bytesSoFar, totalBytes int64)
+}
+
+func (p *progressReader) Read(buf []byte) (int, error) {
+	n, err := p.r.Read(buf)
+	if n > 0 {
+		p.soFar += int64(n)
+		if p.cb != nil {
+			p.cb(p.soFar, p.total)
+		}
+	}
+	return n, err
 }
 
 // Ensure compile-time interface satisfaction.

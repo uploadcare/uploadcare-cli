@@ -24,6 +24,7 @@ type mockFileService struct {
 	deleteFunc     func(ctx context.Context, uuids []string) (*service.BatchResult, error)
 	localCopyFunc  func(ctx context.Context, params service.LocalCopyParams) (*service.File, error)
 	remoteCopyFunc func(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error)
+	downloadFunc   func(ctx context.Context, params service.DownloadParams) (*service.DownloadResult, error)
 }
 
 func (m *mockFileService) Info(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
@@ -85,6 +86,13 @@ func (m *mockFileService) LocalCopy(ctx context.Context, params service.LocalCop
 func (m *mockFileService) RemoteCopy(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error) {
 	if m.remoteCopyFunc != nil {
 		return m.remoteCopyFunc(ctx, params)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockFileService) Download(ctx context.Context, params service.DownloadParams) (*service.DownloadResult, error) {
+	if m.downloadFunc != nil {
+		return m.downloadFunc(ctx, params)
 	}
 	return nil, errors.New("not implemented")
 }

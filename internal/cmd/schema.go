@@ -80,7 +80,8 @@ No authentication required.`,
 					"All timestamps are in RFC 3339 / UTC format.",
 					"For batch operations (file store, file delete), exit code 1 means partial success — check the 'problems' field in JSON output.",
 					"When piping between commands, use --json uuid or --jq '.uuid' to emit just the UUID for --from-stdin consumption.",
-				"For 'project usage': --to must be strictly before today in UTC. Using today's date or a future date will return a validation error.",
+					"For file download, use --output-dir for multiple UUIDs or --from-stdin; --output - streams bytes to stdout and cannot be combined with --json.",
+					"For 'project usage': --to must be strictly before today in UTC. Using today's date or a future date will return a validation error.",
 				},
 				URLAPI: buildURLAPISchema(),
 			}
@@ -232,6 +233,8 @@ func jsonFieldsForCommand(path string) []string {
 		return []string{"results", "problems"}
 	case "file remote-copy":
 		return []string{"type", "result", "already_exists"}
+	case "file download":
+		return []string{"uuid", "path", "size", "source_url", "status"}
 	case "group info", "group create", "group list":
 		return []string{"id", "datetime_created", "datetime_stored", "files_count", "cdn_url", "url", "files"}
 	case "webhook list", "webhook create", "webhook update":
