@@ -12,8 +12,8 @@ import (
 // NewRootCmd creates the top-level "uploadcare" command with all global flags.
 func NewRootCmd(version, commit, date string) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:           "uploadcare",
-		Short:         "Uploadcare CLI — manage files, projects, and more",
+		Use:   "uploadcare",
+		Short: "Uploadcare CLI — manage files, projects, and more",
 		Long: `Uploadcare CLI — manage files, projects, and more from the command line.
 
 Authenticate using API keys (flags, env vars, or config file):

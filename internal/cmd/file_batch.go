@@ -302,4 +302,3 @@ func collectUUIDs(args []string, fromStdin bool) ([]string, error) {
 
 	return result, nil
 }
-

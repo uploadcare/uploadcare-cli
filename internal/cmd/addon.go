@@ -16,8 +16,8 @@ import (
 var addonNameMap = map[string]string{
 	"aws-rekognition-detect-labels":            "aws_rekognition_detect_labels",
 	"aws-rekognition-detect-moderation-labels": "aws_rekognition_detect_moderation_labels",
-	"remove-bg":                                "remove_bg",
-	"uc-clamav-virus-scan":                     "uc_clamav_virus_scan",
+	"remove-bg":            "remove_bg",
+	"uc-clamav-virus-scan": "uc_clamav_virus_scan",
 }
 
 func validAddonNames() []string {

@@ -800,4 +800,3 @@ project_api_token: "tok"
 		t.Errorf("ProjectAPIToken = %q, want %q", cfg.ProjectAPIToken, "tok")
 	}
 }
-

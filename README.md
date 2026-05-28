@@ -361,6 +361,9 @@ make build
 # Run tests
 make test
 
+# Format Go files
+make fmt
+
 # Lint
 make lint
 ```

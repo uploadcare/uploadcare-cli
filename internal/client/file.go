@@ -428,10 +428,10 @@ func (s *fileService) Download(ctx context.Context, params service.DownloadParam
 
 // progressReader wraps an io.Reader, invoking a callback after each read.
 type progressReader struct {
-	r        io.Reader
-	total    int64
-	soFar    int64
-	cb       func(bytesSoFar, totalBytes int64)
+	r     io.Reader
+	total int64
+	soFar int64
+	cb    func(bytesSoFar, totalBytes int64)
 }
 
 func (p *progressReader) Read(buf []byte) (int, error) {

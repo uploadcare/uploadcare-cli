@@ -15,16 +15,16 @@ import (
 
 // mockFileService implements service.FileService for testing.
 type mockFileService struct {
-	infoFunc       func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error)
-	listFunc       func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error)
-	iterateFunc    func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error
+	infoFunc          func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error)
+	listFunc          func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error)
+	iterateFunc       func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error
 	uploadFunc        func(ctx context.Context, params service.UploadParams) (*service.File, error)
 	uploadFromURLFunc func(ctx context.Context, params service.URLUploadParams) (*service.File, error)
 	storeFunc         func(ctx context.Context, uuids []string) (*service.BatchResult, error)
-	deleteFunc     func(ctx context.Context, uuids []string) (*service.BatchResult, error)
-	localCopyFunc  func(ctx context.Context, params service.LocalCopyParams) (*service.File, error)
-	remoteCopyFunc func(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error)
-	downloadFunc   func(ctx context.Context, params service.DownloadParams) (*service.DownloadResult, error)
+	deleteFunc        func(ctx context.Context, uuids []string) (*service.BatchResult, error)
+	localCopyFunc     func(ctx context.Context, params service.LocalCopyParams) (*service.File, error)
+	remoteCopyFunc    func(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error)
+	downloadFunc      func(ctx context.Context, params service.DownloadParams) (*service.DownloadResult, error)
 }
 
 func (m *mockFileService) Info(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
