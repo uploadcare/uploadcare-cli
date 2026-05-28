@@ -58,7 +58,7 @@ func (s *usageService) Combined(ctx context.Context, pubKey string, from, to str
 }
 
 func (s *usageService) Metric(ctx context.Context, pubKey, metric string, from, to string) (*service.MetricResult, error) {
-	m, err := s.sdk.GetUsageMetric(ctx, pubKey, metric, projectapi.UsageDateRange{
+	m, err := s.sdk.GetUsageMetric(ctx, pubKey, projectapi.UsageMetricName(metric), projectapi.UsageDateRange{
 		From: from,
 		To:   to,
 	})
@@ -67,7 +67,7 @@ func (s *usageService) Metric(ctx context.Context, pubKey, metric string, from, 
 	}
 
 	result := &service.MetricResult{
-		Metric: m.Metric,
+		Metric: string(m.Metric),
 		Unit:   m.Unit,
 		Data:   make([]service.MetricDayData, len(m.Data)),
 	}

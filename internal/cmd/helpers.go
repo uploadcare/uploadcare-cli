@@ -105,7 +105,8 @@ func groupServiceFromCmd(cmd *cobra.Command) (service.GroupService, error) {
 	}
 
 	httpClient := client.NewVerboseHTTPClient(verbose)
-	svc, err := client.NewGroupService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	cdnBase := loader.ResolveCDNBase(creds, verbose)
+	svc, err := client.NewGroupService(creds.PublicKey, creds.SecretKey, cdnBase, httpClient, verbose)
 	if err != nil {
 		return nil, &ExitError{Code: 1, Err: err}
 	}

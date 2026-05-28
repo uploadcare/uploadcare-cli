@@ -25,52 +25,6 @@ func TestNewFileService_WithCDNBase(t *testing.T) {
 	}
 }
 
-func TestSetCDNURL_RewritesOriginalFileURL(t *testing.T) {
-	s := &fileService{cdnBase: "https://abc1234567.ucarecd.net"}
-	f := &service.File{
-		UUID:            "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-		OriginalFileURL: "https://ucarecdn.com/a1b2c3d4-e5f6-7890-abcd-ef1234567890/",
-	}
-	s.setCDNURL(f)
-	want := "https://abc1234567.ucarecd.net/a1b2c3d4-e5f6-7890-abcd-ef1234567890/"
-	if f.OriginalFileURL != want {
-		t.Errorf("OriginalFileURL = %q, want %q", f.OriginalFileURL, want)
-	}
-}
-
-func TestSetCDNURL_NoOpWhenCDNBaseEmpty(t *testing.T) {
-	s := &fileService{cdnBase: ""}
-	f := &service.File{
-		UUID:            "a1b2c3d4",
-		OriginalFileURL: "https://ucarecdn.com/a1b2c3d4/",
-	}
-	s.setCDNURL(f)
-	if f.OriginalFileURL != "https://ucarecdn.com/a1b2c3d4/" {
-		t.Errorf("OriginalFileURL should be unchanged, got %q", f.OriginalFileURL)
-	}
-}
-
-func TestSetCDNURL_NoOpWhenDeletedFile(t *testing.T) {
-	s := &fileService{cdnBase: "https://abc1234567.ucarecd.net"}
-	f := &service.File{
-		UUID:            "a1b2c3d4",
-		OriginalFileURL: "", // API returns null for deleted files
-	}
-	s.setCDNURL(f)
-	if f.OriginalFileURL != "" {
-		t.Errorf("OriginalFileURL should remain empty for deleted file, got %q", f.OriginalFileURL)
-	}
-}
-
-func TestSetCDNURL_TrailingSlashNormalized(t *testing.T) {
-	s := &fileService{cdnBase: "https://custom.example.com/"}
-	f := &service.File{UUID: "abc123", OriginalFileURL: "https://ucarecdn.com/abc123/"}
-	s.setCDNURL(f)
-	if f.OriginalFileURL != "https://custom.example.com/abc123/" {
-		t.Errorf("OriginalFileURL = %q, want no double slash", f.OriginalFileURL)
-	}
-}
-
 func TestNewFileService_EmptyKeys(t *testing.T) {
 	// SDK validates credentials at client creation time.
 	_, err := NewFileService("", "", "", nil, nil)

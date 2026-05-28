@@ -23,11 +23,13 @@ func NewWebhookService(publicKey, secretKey string, httpClient *http.Client, ver
 		PublicKey: publicKey,
 		SecretKey: secretKey,
 	}
-	conf := &ucare.Config{
-		APIVersion:             ucare.APIv07,
-		SignBasedAuthentication: true,
-		HTTPClient:             httpClient,
-		UserAgent:              UserAgent,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithHTTPClient(httpClient),
+		ucare.WithUserAgent(UserAgent),
+	)
+	if err != nil {
+		return nil, err
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
@@ -54,7 +56,7 @@ func (s *webhookService) List(ctx context.Context) ([]service.Webhook, error) {
 func (s *webhookService) Create(ctx context.Context, params service.WebhookCreateParams) (*service.Webhook, error) {
 	sdkParams := webhook.Params{
 		TargetURL: ucare.String(params.TargetURL),
-		Event:     ucare.String(params.Event),
+		Event:     webhook.EventPtr(webhook.Event(params.Event)),
 		IsActive:  ucare.Bool(params.IsActive),
 	}
 	if params.SigningSecret != "" {
@@ -80,7 +82,7 @@ func (s *webhookService) Update(ctx context.Context, id string, params service.W
 		sdkParams.TargetURL = params.TargetURL
 	}
 	if params.Event != nil {
-		sdkParams.Event = params.Event
+		sdkParams.Event = webhook.EventPtr(webhook.Event(*params.Event))
 	}
 	if params.IsActive != nil {
 		sdkParams.IsActive = params.IsActive
@@ -108,7 +110,7 @@ func mapWebhookInfo(info webhook.Info) service.Webhook {
 	w := service.Webhook{
 		ID:        int(info.ID),
 		TargetURL: info.TargetURL,
-		Event:     info.Event,
+		Event:     string(info.Event),
 		IsActive:  info.IsActive,
 	}
 	if info.SigningSecret != nil {

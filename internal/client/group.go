@@ -19,16 +19,19 @@ type groupService struct {
 }
 
 // NewGroupService creates a service.GroupService backed by the Uploadcare SDK.
-func NewGroupService(publicKey, secretKey string, httpClient *http.Client, verbose *output.VerboseLogger) (service.GroupService, error) {
+func NewGroupService(publicKey, secretKey, cdnBase string, httpClient *http.Client, verbose *output.VerboseLogger) (service.GroupService, error) {
 	creds := ucare.APICreds{
 		PublicKey: publicKey,
 		SecretKey: secretKey,
 	}
-	conf := &ucare.Config{
-		APIVersion:             ucare.APIv07,
-		SignBasedAuthentication: true,
-		HTTPClient:             httpClient,
-		UserAgent:              UserAgent,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithCDNBase(cdnBase),
+		ucare.WithHTTPClient(httpClient),
+		ucare.WithUserAgent(UserAgent),
+	)
+	if err != nil {
+		return nil, err
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {

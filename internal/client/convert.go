@@ -23,11 +23,13 @@ func NewConvertService(publicKey, secretKey string, httpClient *http.Client, ver
 		PublicKey: publicKey,
 		SecretKey: secretKey,
 	}
-	conf := &ucare.Config{
-		APIVersion:             ucare.APIv07,
-		SignBasedAuthentication: true,
-		HTTPClient:             httpClient,
-		UserAgent:              UserAgent,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithHTTPClient(httpClient),
+		ucare.WithUserAgent(UserAgent),
+	)
+	if err != nil {
+		return nil, err
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
@@ -50,7 +52,7 @@ func (s *convertService) Document(ctx context.Context, params service.DocConvert
 		sdkParams.ToStore = ucare.String(conversion.ToStoreTrue)
 	}
 	if params.SaveInGroup {
-		sdkParams.SaveInGroup = ucare.String("true")
+		sdkParams.SaveInGroup = "1"
 	}
 
 	result, err := s.sdk.Document(ctx, sdkParams)

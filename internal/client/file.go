@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/uploadcare/uploadcare-cli/internal/output"
@@ -18,7 +17,6 @@ import (
 type fileService struct {
 	sdkFileSvc   file.Service
 	sdkUploadSvc upload.Service
-	cdnBase      string
 	verbose      *output.VerboseLogger
 }
 
@@ -30,12 +28,14 @@ func NewFileService(publicKey, secretKey, cdnBase string, httpClient *http.Clien
 		PublicKey: publicKey,
 		SecretKey: secretKey,
 	}
-	conf := &ucare.Config{
-		APIVersion:             ucare.APIv07,
-		SignBasedAuthentication: true,
-		CDNBase:                cdnBase,
-		HTTPClient:             httpClient,
-		UserAgent:              UserAgent,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithCDNBase(cdnBase),
+		ucare.WithHTTPClient(httpClient),
+		ucare.WithUserAgent(UserAgent),
+	)
+	if err != nil {
+		return nil, err
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
@@ -44,19 +44,8 @@ func NewFileService(publicKey, secretKey, cdnBase string, httpClient *http.Clien
 	return &fileService{
 		sdkFileSvc:   file.NewService(client),
 		sdkUploadSvc: upload.NewService(client),
-		cdnBase:      cdnBase,
 		verbose:      verbose,
 	}, nil
-}
-
-// setCDNURL overwrites OriginalFileURL with a URL built from the configured
-// CDN base and the file's UUID. This makes --cdn-base and per-project CDN
-// domains actually take effect, since the API always returns the legacy
-// ucarecdn.com URL regardless of project settings.
-func (s *fileService) setCDNURL(f *service.File) {
-	if s.cdnBase != "" && f.OriginalFileURL != "" {
-		f.OriginalFileURL = strings.TrimRight(s.cdnBase, "/") + "/" + f.UUID + "/"
-	}
 }
 
 func (s *fileService) Info(ctx context.Context, uuid string, includeAppData bool) (*service.File, error) {
@@ -69,9 +58,7 @@ func (s *fileService) Info(ctx context.Context, uuid string, includeAppData bool
 	if err != nil {
 		return nil, err
 	}
-	f := mapFileInfo(info)
-	s.setCDNURL(f)
-	return f, nil
+	return mapFileInfo(info), nil
 }
 
 func mapFileInfo(info file.Info) *service.File {
@@ -145,9 +132,7 @@ func (s *fileService) List(ctx context.Context, opts service.FileListOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		f := mapFileInfo(*info)
-		s.setCDNURL(f)
-		files = append(files, *f)
+		files = append(files, *mapFileInfo(*info))
 	}
 
 	return &service.FileListResult{
@@ -171,9 +156,7 @@ func (s *fileService) Iterate(ctx context.Context, opts service.FileListOptions,
 		if err != nil {
 			return err
 		}
-		f := mapFileInfo(*info)
-		s.setCDNURL(f)
-		if err := fn(*f); err != nil {
+		if err := fn(*mapFileInfo(*info)); err != nil {
 			return err
 		}
 	}
@@ -304,12 +287,9 @@ func (s *fileService) enrichUploadInfo(ctx context.Context, id string, fallback 
 	fileInfo, err := s.sdkFileSvc.Info(ctx, id, nil)
 	if err != nil {
 		s.verbose.Infof("file info fetch failed, using upload response: %v", err)
-		s.setCDNURL(fallback)
 		return fallback
 	}
-	f := mapFileInfo(fileInfo)
-	s.setCDNURL(f)
-	return f
+	return mapFileInfo(fileInfo)
 }
 
 func (s *fileService) Store(ctx context.Context, uuids []string) (*service.BatchResult, error) {
@@ -317,11 +297,7 @@ func (s *fileService) Store(ctx context.Context, uuids []string) (*service.Batch
 	if err != nil {
 		return nil, err
 	}
-	result := mapBatchInfo(batch)
-	for i := range result.Files {
-		s.setCDNURL(&result.Files[i])
-	}
-	return result, nil
+	return mapBatchInfo(batch), nil
 }
 
 func (s *fileService) Delete(ctx context.Context, uuids []string) (*service.BatchResult, error) {
@@ -329,11 +305,7 @@ func (s *fileService) Delete(ctx context.Context, uuids []string) (*service.Batc
 	if err != nil {
 		return nil, err
 	}
-	result := mapBatchInfo(batch)
-	for i := range result.Files {
-		s.setCDNURL(&result.Files[i])
-	}
-	return result, nil
+	return mapBatchInfo(batch), nil
 }
 
 func mapBatchInfo(batch file.BatchInfo) *service.BatchResult {
@@ -361,9 +333,7 @@ func (s *fileService) LocalCopy(ctx context.Context, params service.LocalCopyPar
 	if err != nil {
 		return nil, err
 	}
-	f := mapFileInfo(copyInfo.Result)
-	s.setCDNURL(f)
-	return f, nil
+	return mapFileInfo(copyInfo.Result), nil
 }
 
 func (s *fileService) RemoteCopy(ctx context.Context, params service.RemoteCopyParams) (*service.RemoteCopyResult, error) {

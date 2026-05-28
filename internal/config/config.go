@@ -366,11 +366,13 @@ func (l *Loader) ResolveCDNBase(creds *ProjectCredentials, verbose *output.Verbo
 		verbose.Info("cdn_base", v+" (config file)")
 		return v
 	}
-	// Priority 5: auto-computed from public key.
+	// Priority 5: auto-computed from public key (handled by the SDK).
 	if creds != nil && creds.PublicKey != "" {
-		v := ucare.CDNBaseURL(creds.PublicKey)
-		verbose.Info("cdn_base", v+" (auto-computed from public key)")
-		return v
+		cfg, err := ucare.NewConfig(ucare.APICreds{PublicKey: creds.PublicKey})
+		if err == nil && cfg.CDNBase != "" {
+			verbose.Info("cdn_base", cfg.CDNBase+" (auto-computed from public key)")
+			return cfg.CDNBase
+		}
 	}
 	// Priority 6: legacy fallback.
 	verbose.Info("cdn_base", DefaultCDNBase+" (default)")

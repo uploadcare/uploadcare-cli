@@ -21,11 +21,13 @@ func NewMetadataService(publicKey, secretKey string, httpClient *http.Client, ve
 		PublicKey: publicKey,
 		SecretKey: secretKey,
 	}
-	conf := &ucare.Config{
-		APIVersion:             ucare.APIv07,
-		SignBasedAuthentication: true,
-		HTTPClient:             httpClient,
-		UserAgent:              UserAgent,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithHTTPClient(httpClient),
+		ucare.WithUserAgent(UserAgent),
+	)
+	if err != nil {
+		return nil, err
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {

@@ -22,11 +22,13 @@ func NewAddonService(publicKey, secretKey string, httpClient *http.Client, verbo
 		PublicKey: publicKey,
 		SecretKey: secretKey,
 	}
-	conf := &ucare.Config{
-		APIVersion:             ucare.APIv07,
-		SignBasedAuthentication: true,
-		HTTPClient:             httpClient,
-		UserAgent:              UserAgent,
+	conf, err := ucare.NewConfig(creds,
+		ucare.WithSignBasedAuthentication(),
+		ucare.WithHTTPClient(httpClient),
+		ucare.WithUserAgent(UserAgent),
+	)
+	if err != nil {
+		return nil, err
 	}
 	client, err := ucare.NewClient(creds, conf)
 	if err != nil {
@@ -51,7 +53,7 @@ func (s *addonService) Execute(ctx context.Context, addonName, fileUUID string, 
 	}
 
 	s.verbose.Infof("executing addon %s on file %s", addonName, fileUUID)
-	result, err := s.sdk.Execute(ctx, addonName, execParams)
+	result, err := s.sdk.Execute(ctx, addon.Name(addonName), execParams)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +64,7 @@ func (s *addonService) Execute(ctx context.Context, addonName, fileUUID string, 
 }
 
 func (s *addonService) Status(ctx context.Context, addonName, requestID string) (*service.AddonStatus, error) {
-	result, err := s.sdk.Status(ctx, addonName, requestID)
+	result, err := s.sdk.Status(ctx, addon.Name(addonName), requestID)
 	if err != nil {
 		return nil, err
 	}
