@@ -34,7 +34,7 @@ Pre-built binaries for all platforms are available on the [Releases page](https:
 
 ### From source
 
-Requires Go 1.22+.
+Requires Go 1.26.1+.
 
 ```bash
 git clone https://github.com/uploadcare/uploadcare-cli.git
