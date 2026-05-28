@@ -357,7 +357,7 @@ install_binary() {
 # ── Success Message ─────────────────────────────────────────────────
 print_success() {
     printf "${GRAY}Description:${NC}\n"
-    printf "${WHITE}Official Uploadcare CLI for interacting with Uploadcare APIs${NC}\n"
+    printf "${WHITE}Official CLI for interacting with Uploadcare APIs${NC}\n"
     printf "\n"
     printf "${GRAY}Usage:${NC}\n"
     printf "${WHITE}uploadcare [command]${NC}\n"
