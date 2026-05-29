@@ -36,6 +36,98 @@ func TestVersionCmd(t *testing.T) {
 	}
 }
 
+func TestRootVersionFlag(t *testing.T) {
+	root := NewRootCmd("v0.1.0", "abc1234", "2026-03-08")
+
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"--version"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+
+	expected := []string{
+		"uploadcare-cli v0.1.0",
+		"commit: abc1234",
+		"built:  2026-03-08",
+		"go:     go",
+		"os/arch:",
+	}
+
+	for _, s := range expected {
+		if !strings.Contains(out, s) {
+			t.Errorf("output missing %q\ngot:\n%s", s, out)
+		}
+	}
+}
+
+func TestRootVersionFlag_JSONAll(t *testing.T) {
+	root := NewRootCmd("v0.1.0", "abc1234", "2026-03-08")
+
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"--version", "--json", "all"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var got map[string]string
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("output is not valid JSON: %v\ngot:\n%s", err, buf.String())
+	}
+	if got["version"] != "v0.1.0" {
+		t.Errorf("version = %q, want %q", got["version"], "v0.1.0")
+	}
+}
+
+func TestVersionQuiet(t *testing.T) {
+	for _, args := range [][]string{
+		{"version", "--quiet"},
+		{"--version", "--quiet"},
+		{"version", "--quiet", "--json", "all"},
+	} {
+		root := NewRootCmd("v0.1.0", "abc1234", "2026-03-08")
+		buf := new(bytes.Buffer)
+		root.SetOut(buf)
+		root.SetErr(new(bytes.Buffer))
+		root.SetArgs(args)
+
+		if err := root.Execute(); err != nil {
+			t.Fatalf("args %v: unexpected error: %v", args, err)
+		}
+		if out := buf.String(); out != "" {
+			t.Errorf("args %v: --quiet should suppress output, got:\n%s", args, out)
+		}
+	}
+}
+
+func TestVersionInvalidJQPropagatesError(t *testing.T) {
+	for _, args := range [][]string{
+		{"version", "--jq", "["},
+		{"--version", "--jq", "["},
+	} {
+		root := NewRootCmd("v0.1.0", "abc1234", "2026-03-08")
+		root.SetOut(new(bytes.Buffer))
+		root.SetErr(new(bytes.Buffer))
+		root.SetArgs(args)
+
+		err := root.Execute()
+		if err == nil {
+			t.Errorf("args %v: invalid jq should return an error", args)
+			continue
+		}
+		if !strings.Contains(err.Error(), "jq") {
+			t.Errorf("args %v: error should mention jq, got: %v", args, err)
+		}
+	}
+}
+
 func TestRootCmd_JSONFlagAll(t *testing.T) {
 	root := NewRootCmd("dev", "none", "unknown")
 	root.SetOut(new(bytes.Buffer))

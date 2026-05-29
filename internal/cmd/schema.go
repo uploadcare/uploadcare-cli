@@ -11,6 +11,7 @@ import (
 type apiSchema struct {
 	Version     string            `json:"version"`
 	GlobalFlags []flagSchema      `json:"global_flags"`
+	RootFlags   []flagSchema      `json:"root_flags,omitempty"`
 	Commands    []cmdSchema       `json:"commands"`
 	ExitCodes   map[string]string `json:"exit_codes"`
 	AgentNotes  []string          `json:"agent_notes"`
@@ -67,6 +68,7 @@ No authentication required.`,
 			schema := apiSchema{
 				Version:     version,
 				GlobalFlags: collectFlags(root.PersistentFlags()),
+				RootFlags:   rootOnlyFlags(root),
 				Commands:    collectCommands(root, ""),
 				ExitCodes: map[string]string{
 					"0": "Success",
@@ -75,6 +77,7 @@ No authentication required.`,
 					"3": "Auth/config error",
 				},
 				AgentNotes: []string{
+					"Flags under root_flags (e.g. --version) are accepted only on the bare 'uploadcare' command, not on subcommands — do not prepend them to subcommand invocations.",
 					"The --json flag requires a value: --json all (every field) or --json field1,field2 (specific fields).",
 					"The --jq flag implies --json. You do not need to pass both --json and --jq.",
 					"All timestamps are in RFC 3339 / UTC format.",
@@ -94,17 +97,36 @@ No authentication required.`,
 	}
 }
 
+// rootOnlyFlags returns flags accepted only on the bare "uploadcare" command
+// (currently --version). Unlike global flags, these are NOT inherited by
+// subcommands, so consumers must not prepend them to subcommand invocations.
+// The auto-generated --help flag is omitted.
+func rootOnlyFlags(root *cobra.Command) []flagSchema {
+	var flags []flagSchema
+	root.LocalNonPersistentFlags().VisitAll(func(f *pflag.Flag) {
+		if f.Name == "help" {
+			return
+		}
+		flags = append(flags, flagToSchema(f))
+	})
+	return flags
+}
+
 func collectFlags(fs *pflag.FlagSet) []flagSchema {
 	var flags []flagSchema
 	fs.VisitAll(func(f *pflag.Flag) {
-		flags = append(flags, flagSchema{
-			Name:        f.Name,
-			Type:        f.Value.Type(),
-			Default:     f.DefValue,
-			Description: f.Usage,
-		})
+		flags = append(flags, flagToSchema(f))
 	})
 	return flags
+}
+
+func flagToSchema(f *pflag.Flag) flagSchema {
+	return flagSchema{
+		Name:        f.Name,
+		Type:        f.Value.Type(),
+		Default:     f.DefValue,
+		Description: f.Usage,
+	}
 }
 
 func collectCommands(cmd *cobra.Command, prefix string) []cmdSchema {

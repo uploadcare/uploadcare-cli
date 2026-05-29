@@ -42,6 +42,55 @@ func TestAPISchema_ContainsAgentNotes(t *testing.T) {
 	}
 }
 
+func TestAPISchema_RootFlagsIncludeVersion(t *testing.T) {
+	root := NewRootCmd("v0.1.0", "abc1234", "2026-03-08")
+
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(new(bytes.Buffer))
+	root.SetArgs([]string{"api-schema"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var schema struct {
+		GlobalFlags []struct {
+			Name string `json:"name"`
+		} `json:"global_flags"`
+		RootFlags []struct {
+			Name string `json:"name"`
+		} `json:"root_flags"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &schema); err != nil {
+		t.Fatalf("failed to parse schema JSON: %v", err)
+	}
+
+	// --version is root-only: it must NOT appear in global_flags (which are
+	// inherited by every command), only in root_flags.
+	for _, f := range schema.GlobalFlags {
+		if f.Name == "version" {
+			t.Error("global_flags must not include the root-only --version flag")
+		}
+	}
+
+	var hasVersion, hasHelp bool
+	for _, f := range schema.RootFlags {
+		switch f.Name {
+		case "version":
+			hasVersion = true
+		case "help":
+			hasHelp = true
+		}
+	}
+	if !hasVersion {
+		t.Error("root_flags should include the --version flag")
+	}
+	if hasHelp {
+		t.Error("root_flags should not include the auto-generated --help flag")
+	}
+}
+
 func TestAPISchema_CommandsHaveJSONFields(t *testing.T) {
 	root := NewRootCmd("v0.1.0", "abc1234", "2026-03-08")
 
