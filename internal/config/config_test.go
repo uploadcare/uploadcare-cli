@@ -379,23 +379,10 @@ func TestRequireProjectAPIToken(t *testing.T) {
 func TestResolve_Defaults(t *testing.T) {
 	l := newTestLoader(t, "")
 
-	l.v.SetDefault("rest_api_base", DefaultRESTAPIBase)
-	l.v.SetDefault("upload_api_base", DefaultUploadAPIBase)
-	l.v.SetDefault("project_api_base", DefaultProjectAPIBase)
-
 	cfg := l.Resolve()
 
-	if cfg.RESTAPIBase != DefaultRESTAPIBase {
-		t.Errorf("RESTAPIBase = %q, want %q", cfg.RESTAPIBase, DefaultRESTAPIBase)
-	}
-	if cfg.UploadAPIBase != DefaultUploadAPIBase {
-		t.Errorf("UploadAPIBase = %q, want %q", cfg.UploadAPIBase, DefaultUploadAPIBase)
-	}
 	if cfg.CDNBase != "" {
 		t.Errorf("CDNBase = %q, want empty (no viper default)", cfg.CDNBase)
-	}
-	if cfg.ProjectAPIBase != DefaultProjectAPIBase {
-		t.Errorf("ProjectAPIBase = %q, want %q", cfg.ProjectAPIBase, DefaultProjectAPIBase)
 	}
 }
 
@@ -583,24 +570,12 @@ projects:
 
 func TestResolve_OverrideBaseURLs(t *testing.T) {
 	l := newTestLoader(t, `
-rest_api_base: "https://custom-rest.example.com"
-upload_api_base: "https://custom-upload.example.com"
 cdn_base: "https://custom-cdn.example.com"
-project_api_base: "https://custom-project.example.com"
 `)
 	cfg := l.Resolve()
 
-	if cfg.RESTAPIBase != "https://custom-rest.example.com" {
-		t.Errorf("RESTAPIBase = %q, want custom", cfg.RESTAPIBase)
-	}
-	if cfg.UploadAPIBase != "https://custom-upload.example.com" {
-		t.Errorf("UploadAPIBase = %q, want custom", cfg.UploadAPIBase)
-	}
 	if cfg.CDNBase != "https://custom-cdn.example.com" {
 		t.Errorf("CDNBase = %q, want custom", cfg.CDNBase)
-	}
-	if cfg.ProjectAPIBase != "https://custom-project.example.com" {
-		t.Errorf("ProjectAPIBase = %q, want custom", cfg.ProjectAPIBase)
 	}
 }
 
@@ -638,10 +613,7 @@ func TestBindFlags_SetsViperFromChangedFlags(t *testing.T) {
 	flags.String("secret-key", "", "")
 	flags.String("project-api-token", "", "")
 	flags.String("project", "", "")
-	flags.String("rest-api-base", "", "")
-	flags.String("upload-api-base", "", "")
 	flags.String("cdn-base", "", "")
-	flags.String("project-api-base", "", "")
 
 	// Simulate flag parsing
 	root.SetArgs([]string{"--public-key", "flag-pub", "--secret-key", "flag-sec"})
@@ -673,10 +645,7 @@ secret_key: "config-sec"
 	flags.String("secret-key", "", "")
 	flags.String("project-api-token", "", "")
 	flags.String("project", "", "")
-	flags.String("rest-api-base", "", "")
-	flags.String("upload-api-base", "", "")
 	flags.String("cdn-base", "", "")
-	flags.String("project-api-base", "", "")
 
 	// No flags set
 	root.SetArgs([]string{})

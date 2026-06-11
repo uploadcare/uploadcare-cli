@@ -126,8 +126,7 @@ func TestRootCmd_HasGlobalFlags(t *testing.T) {
 
 	flags := []string{
 		"public-key", "secret-key", "project-api-token", "project",
-		"json", "jq", "quiet", "verbose", "no-color",
-		"rest-api-base", "upload-api-base", "cdn-base", "project-api-base",
+		"json", "jq", "quiet", "verbose", "no-color", "cdn-base",
 	}
 
 	for _, name := range flags {

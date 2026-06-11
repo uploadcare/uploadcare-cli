@@ -114,9 +114,6 @@ projects:
     public_key: "def456"
     secret_key: "secret..."
 
-# Optional global overrides
-rest_api_base: "https://api.uploadcare.com"
-upload_api_base: "https://upload.uploadcare.com"
 # Global cdn_base fallback — used when neither the flag, env var, nor the
 # resolved project entry provides a cdn_base. When omitted entirely, the
 # CDN base is auto-computed from the project's public key.
@@ -132,10 +129,7 @@ upload_api_base: "https://upload.uploadcare.com"
 | `UPLOADCARE_PROJECT_API_TOKEN` | Account-level bearer token |
 | `UPLOADCARE_PROJECT` | Named project to use from config |
 | `UPLOADCARE_VERBOSE` | Enable verbose HTTP logging (`1` or `true`) |
-| `UPLOADCARE_REST_API_BASE` | Override REST API base URL |
-| `UPLOADCARE_UPLOAD_API_BASE` | Override Upload API base URL |
 | `UPLOADCARE_CDN_BASE` | Override CDN base URL |
-| `UPLOADCARE_PROJECT_API_BASE` | Override Project API base URL |
 | `NO_COLOR` | Disable colored output |
 
 ### Project selection

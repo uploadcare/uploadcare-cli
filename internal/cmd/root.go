@@ -84,10 +84,7 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 	flags.Bool("no-color", false, "Disable colored output (env: NO_COLOR)")
 
 	// Base URL overrides
-	flags.String("rest-api-base", "", "Override REST API base URL (env: UPLOADCARE_REST_API_BASE)")
-	flags.String("upload-api-base", "", "Override Upload API base URL (env: UPLOADCARE_UPLOAD_API_BASE)")
 	flags.String("cdn-base", "", "Override CDN base URL; auto-computed from public key when not set (env: UPLOADCARE_CDN_BASE)")
-	flags.String("project-api-base", "", "Override Project API base URL (env: UPLOADCARE_PROJECT_API_BASE)")
 
 	client.UserAgent = "UploadcareCLI/" + version
 

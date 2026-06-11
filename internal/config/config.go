@@ -20,13 +20,8 @@ var (
 	ErrProjectNotFound      = errors.New("project not found in config")
 )
 
-// Default API base URLs.
-const (
-	DefaultRESTAPIBase    = "https://api.uploadcare.com"
-	DefaultUploadAPIBase  = "https://upload.uploadcare.com"
-	DefaultCDNBase        = "https://ucarecdn.com"
-	DefaultProjectAPIBase = "https://api.uploadcare.com/apps/api/project-api/v1/"
-)
+// DefaultCDNBase is the default CDN base URL.
+const DefaultCDNBase = "https://ucarecdn.com"
 
 // ConfigDir returns the path to ~/.uploadcare.
 func ConfigDir() string {
@@ -83,10 +78,7 @@ type Config struct {
 	ProjectAPIToken string
 
 	// API base URLs
-	RESTAPIBase    string
-	UploadAPIBase  string
-	CDNBase        string
-	ProjectAPIBase string
+	CDNBase string
 
 	// Output
 	Verbose bool
@@ -136,15 +128,7 @@ func (l *Loader) Init() error {
 	_ = l.v.BindEnv("project", "UPLOADCARE_PROJECT")
 	_ = l.v.BindEnv("verbose", "UPLOADCARE_VERBOSE")
 
-	_ = l.v.BindEnv("rest_api_base", "UPLOADCARE_REST_API_BASE")
-	_ = l.v.BindEnv("upload_api_base", "UPLOADCARE_UPLOAD_API_BASE")
 	_ = l.v.BindEnv("cdn_base", "UPLOADCARE_CDN_BASE")
-	_ = l.v.BindEnv("project_api_base", "UPLOADCARE_PROJECT_API_BASE")
-
-	// Defaults
-	l.v.SetDefault("rest_api_base", DefaultRESTAPIBase)
-	l.v.SetDefault("upload_api_base", DefaultUploadAPIBase)
-	l.v.SetDefault("project_api_base", DefaultProjectAPIBase)
 
 	// Read config file — missing file is fine, anything else is a real error.
 	if err := l.v.ReadInConfig(); err != nil {
@@ -168,10 +152,7 @@ func (l *Loader) BindFlags(cmd *cobra.Command) {
 	l.bindFlag(flags, "secret-key", "secret_key")
 	l.bindFlag(flags, "project-api-token", "project_api_token")
 	l.bindFlag(flags, "project", "project")
-	l.bindFlag(flags, "rest-api-base", "rest_api_base")
-	l.bindFlag(flags, "upload-api-base", "upload_api_base")
 	l.bindFlag(flags, "cdn-base", "cdn_base")
-	l.bindFlag(flags, "project-api-base", "project_api_base")
 	l.bindBoolFlag(flags, "verbose", "verbose")
 }
 
@@ -401,10 +382,7 @@ func (l *Loader) Resolve() *Config {
 		PublicKey:       l.v.GetString("public_key"),
 		SecretKey:       l.v.GetString("secret_key"),
 		ProjectAPIToken: l.v.GetString("project_api_token"),
-		RESTAPIBase:     l.v.GetString("rest_api_base"),
-		UploadAPIBase:   l.v.GetString("upload_api_base"),
 		CDNBase:         l.v.GetString("cdn_base"),
-		ProjectAPIBase:  l.v.GetString("project_api_base"),
 		Verbose:         l.v.GetBool("verbose"),
 	}
 }
