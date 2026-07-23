@@ -43,6 +43,12 @@ Use "uploadcare <command> --help" for details on any command.
 Use "uploadcare api-schema" for machine-readable command metadata.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if showVersion, _ := cmd.Flags().GetBool("version"); showVersion {
+				return printVersion(cmd, version, commit, date)
+			}
+			return cmd.Help()
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Root().PersistentFlags()
 			verbose, _ := f.GetBool("verbose")
@@ -66,6 +72,9 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 			return nil
 		},
 	}
+
+	// Local to root: `uploadcare --version`, mirroring the `version` subcommand.
+	rootCmd.Flags().Bool("version", false, "Print CLI version")
 
 	// Global flags
 	flags := rootCmd.PersistentFlags()
