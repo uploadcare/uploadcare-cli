@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/uploadcare/uploadcare-cli/internal/output"
 	"github.com/uploadcare/uploadcare-cli/internal/service"
+	"github.com/uploadcare/uploadcare-cli/internal/validate"
 )
 
 type uploadFileEntry struct {
@@ -24,6 +25,7 @@ func newFileUploadCmd(fileSvc service.FileService) *cobra.Command {
 	var (
 		store              string
 		metadata           []string
+		tags               []string
 		multipartThreshold int64
 		forceMultipart     bool
 		forceDirect        bool
@@ -50,14 +52,14 @@ The --store flag controls file storage behavior:
   true   Store the file immediately
   false  Leave the file unstored (auto-deleted after 24h)
 
-Attach metadata at upload time with --metadata key=value (repeatable).
+Attach metadata with --metadata key=value and tags with --tag (repeatable).
 Use --dry-run to validate files without actually uploading.
 Use --progress to show upload progress on stderr.
 
 Returns a single JSON object for one file, or an array for multiple files.
 
 JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
-is_ready, datetime_uploaded, original_file_url, metadata.`,
+is_ready, datetime_uploaded, original_file_url, metadata, tags.`,
 		Example: `  # Upload a single file
   uploadcare file upload photo.jpg
 
@@ -66,6 +68,9 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 
   # Upload with metadata
   uploadcare file upload photo.jpg --metadata source=camera --metadata project=vacation
+
+  # Upload with multiple tags
+  uploadcare file upload photo.jpg --tag vacation --tag featured
 
   # Upload multiple files, get JSON output
   uploadcare file upload *.jpg --json uuid,filename,size
@@ -85,6 +90,10 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 			case "auto", "true", "false":
 			default:
 				return ExitErrorf(2, "invalid --store value: %q (must be \"auto\", \"true\", or \"false\")", store)
+			}
+			normalizedTags, err := validate.NormalizeTags(tags, validate.MaxTagCount)
+			if err != nil {
+				return usageError(fmt.Errorf("--tag: %w", err))
 			}
 
 			svc := fileSvc
@@ -140,7 +149,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 			}
 
 			if dryRun {
-				return runUploadDryRun(cmd, entries, opts, formatter)
+				return runUploadDryRun(cmd, entries, normalizedTags, opts, formatter)
 			}
 
 			var threshold *int64
@@ -188,6 +197,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 					ContentType:        entry.contentType,
 					Store:              store,
 					Metadata:           meta,
+					Tags:               normalizedTags,
 					MultipartThreshold: threshold,
 				})
 				_ = f.Close()
@@ -224,6 +234,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 	f := cmd.Flags()
 	f.StringVar(&store, "store", "auto", "File storage behavior (auto, true, false)")
 	f.StringSliceVar(&metadata, "metadata", nil, "Metadata key=value pairs (repeatable)")
+	f.StringArrayVar(&tags, "tag", nil, "Tag attached to every uploaded file (repeatable)")
 	f.Int64Var(&multipartThreshold, "multipart-threshold", 10485760, "Size threshold for multipart upload in bytes")
 	f.BoolVar(&forceMultipart, "force-multipart", false, "Force multipart upload")
 	f.BoolVar(&forceDirect, "force-direct", false, "Force direct upload")
@@ -234,11 +245,12 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 	return cmd
 }
 
-func runUploadDryRun(cmd *cobra.Command, entries []uploadFileEntry, opts output.FormatOptions, formatter output.Formatter) error {
+func runUploadDryRun(cmd *cobra.Command, entries []uploadFileEntry, tags []string, opts output.FormatOptions, formatter output.Formatter) error {
 	type dryRunEntry struct {
-		Path        string `json:"path"`
-		Size        int64  `json:"size"`
-		ContentType string `json:"content_type"`
+		Path        string   `json:"path"`
+		Size        int64    `json:"size"`
+		ContentType string   `json:"content_type"`
+		Tags        []string `json:"tags,omitempty"`
 	}
 	var dryEntries []dryRunEntry
 	for _, e := range entries {
@@ -246,6 +258,7 @@ func runUploadDryRun(cmd *cobra.Command, entries []uploadFileEntry, opts output.
 			Path:        e.path,
 			Size:        e.size,
 			ContentType: e.contentType,
+			Tags:        tags,
 		})
 	}
 
@@ -253,9 +266,17 @@ func runUploadDryRun(cmd *cobra.Command, entries []uploadFileEntry, opts output.
 		return formatter.Format(cmd.OutOrStdout(), dryEntries)
 	}
 
-	table := output.NewTableData("PATH", "SIZE", "CONTENT-TYPE")
+	headers := []string{"PATH", "SIZE", "CONTENT-TYPE"}
+	if len(tags) > 0 {
+		headers = append(headers, "TAGS")
+	}
+	table := output.NewTableData(headers...)
 	for _, e := range dryEntries {
-		table.AddRow(e.Path, strconv.FormatInt(e.Size, 10), e.ContentType)
+		row := []string{e.Path, strconv.FormatInt(e.Size, 10), e.ContentType}
+		if len(tags) > 0 {
+			row = append(row, strings.Join(tags, ", "))
+		}
+		table.AddRow(row...)
 	}
 	return formatter.Format(cmd.OutOrStdout(), table)
 }

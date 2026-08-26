@@ -101,6 +101,7 @@ Use "uploadcare api-schema" for machine-readable command metadata.`,
 	rootCmd.AddCommand(newVersionCmd(version, commit, date))
 	rootCmd.AddCommand(newAPISchemaCmd(version))
 	rootCmd.AddCommand(newFileCmd(nil))
+	rootCmd.AddCommand(newTagCmd(nil))
 	rootCmd.AddCommand(newMetadataCmd(nil))
 	rootCmd.AddCommand(newGroupCmd(nil))
 	rootCmd.AddCommand(newWebhookCmd(nil))

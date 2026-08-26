@@ -46,20 +46,29 @@ func ApplyCDNEffects(originalFileURL, uuid, effects string) string {
 
 // File represents an Uploadcare file resource.
 type File struct {
-	UUID             string            `json:"uuid"`
-	Size             int64             `json:"size"`
-	Filename         string            `json:"filename"`
-	MimeType         string            `json:"mime_type"`
-	IsImage          bool              `json:"is_image"`
-	IsStored         bool              `json:"is_stored"`
-	IsReady          bool              `json:"is_ready"`
-	DatetimeUploaded time.Time         `json:"datetime_uploaded"`
-	DatetimeStored   *time.Time        `json:"datetime_stored"`
-	DatetimeRemoved  *time.Time        `json:"datetime_removed"`
-	URL              string            `json:"url"`
-	OriginalFileURL  string            `json:"original_file_url"`
-	Metadata         map[string]string `json:"metadata"`
-	AppData          json.RawMessage   `json:"appdata,omitempty"`
+	UUID             string               `json:"uuid"`
+	Size             int64                `json:"size"`
+	Filename         string               `json:"filename"`
+	MimeType         string               `json:"mime_type"`
+	IsImage          bool                 `json:"is_image"`
+	IsStored         bool                 `json:"is_stored"`
+	IsReady          bool                 `json:"is_ready"`
+	DatetimeUploaded time.Time            `json:"datetime_uploaded"`
+	DatetimeStored   *time.Time           `json:"datetime_stored"`
+	DatetimeRemoved  *time.Time           `json:"datetime_removed"`
+	URL              string               `json:"url"`
+	OriginalFileURL  string               `json:"original_file_url"`
+	Metadata         map[string]string    `json:"metadata"`
+	Tags             []string             `json:"tags"`
+	AppData          json.RawMessage      `json:"appdata,omitempty"`
+	Highlight        *FileSearchHighlight `json:"highlight,omitempty"`
+}
+
+// FileSearchHighlight contains the fields that matched a search query.
+type FileSearchHighlight struct {
+	OriginalFilename []string          `json:"original_filename,omitempty"`
+	DetectedMimeType []string          `json:"detected_mime_type,omitempty"`
+	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
 // FileListOptions specifies parameters for listing files.
@@ -80,6 +89,58 @@ type FileListResult struct {
 	Total    int    `json:"total"`
 }
 
+// FileSearchPhrase specifies phrase-match fields for file search.
+type FileSearchPhrase struct {
+	OriginalFilename string
+	Metadata         string
+	DetectedMimeType string
+}
+
+// FileSearchDatetime specifies uploaded-at range boundaries.
+type FileSearchDatetime struct {
+	Gt  *time.Time
+	Gte *time.Time
+	Lt  *time.Time
+	Lte *time.Time
+}
+
+// FileSearchSize specifies file-size range boundaries.
+type FileSearchSize struct {
+	Gt  *uint64
+	Gte *uint64
+	Lt  *uint64
+	Lte *uint64
+}
+
+// FileSearchTags specifies tag filters. Any, All, and None are combined.
+type FileSearchTags struct {
+	Any  []string
+	All  []string
+	None []string
+}
+
+// FileSearchOptions specifies parameters for full-text file search.
+type FileSearchOptions struct {
+	Limit            int
+	Offset           int
+	IncludeAppData   bool
+	Query            string
+	Phrase           *FileSearchPhrase
+	Exact            map[string][]string
+	DatetimeUploaded *FileSearchDatetime
+	Size             *FileSearchSize
+	IsImage          *bool
+	Fuzziness        bool
+	Tags             *FileSearchTags
+	Sort             []string
+}
+
+// FileSearchResult is a page of file search matches.
+type FileSearchResult struct {
+	Files []File `json:"results"`
+	Total uint64 `json:"total"`
+}
+
 // UploadParams configures a direct file upload.
 type UploadParams struct {
 	Data               io.ReadSeeker
@@ -88,6 +149,7 @@ type UploadParams struct {
 	ContentType        string
 	Store              string // "auto", "true", "false"
 	Metadata           map[string]string
+	Tags               []string
 	MultipartThreshold *int64
 }
 
@@ -102,10 +164,24 @@ type URLUploadParams struct {
 	URL             string
 	Store           string // "auto", "true", "false"
 	Metadata        map[string]string
+	Tags            []string
 	Wait            bool
 	Timeout         time.Duration
 	CheckDuplicates bool
 	SaveDuplicates  bool
+}
+
+// TagUpdateOptions specifies tags to add and delete in one request.
+type TagUpdateOptions struct {
+	Add    []string
+	Delete []string
+}
+
+// TagChangeResult describes the resulting tags and the applied changes.
+type TagChangeResult struct {
+	Tags    []string `json:"tags"`
+	Added   []string `json:"added"`
+	Deleted []string `json:"deleted"`
 }
 
 // DownloadParams configures a file download from the CDN.
@@ -353,6 +429,8 @@ type MimeType struct {
 type FileService interface {
 	List(ctx context.Context, opts FileListOptions) (*FileListResult, error)
 	Iterate(ctx context.Context, opts FileListOptions, fn func(File) error) error
+	Search(ctx context.Context, opts FileSearchOptions) (*FileSearchResult, error)
+	IterateSearch(ctx context.Context, opts FileSearchOptions, fn func(File) error) (uint64, error)
 	Info(ctx context.Context, uuid string, includeAppData bool) (*File, error)
 	Upload(ctx context.Context, params UploadParams) (*File, error)
 	UploadFromURL(ctx context.Context, params URLUploadParams) (*File, error)
@@ -361,6 +439,13 @@ type FileService interface {
 	LocalCopy(ctx context.Context, params LocalCopyParams) (*File, error)
 	RemoteCopy(ctx context.Context, params RemoteCopyParams) (*RemoteCopyResult, error)
 	Download(ctx context.Context, params DownloadParams) (*DownloadResult, error)
+}
+
+// TagService provides file tag operations.
+type TagService interface {
+	List(ctx context.Context, fileUUID string) ([]string, error)
+	Replace(ctx context.Context, fileUUID string, tags []string) (*TagChangeResult, error)
+	Update(ctx context.Context, fileUUID string, opts TagUpdateOptions) (*TagChangeResult, error)
 }
 
 // MetadataService provides file metadata CRUD operations.

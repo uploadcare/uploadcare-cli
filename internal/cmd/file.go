@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ func newFileCmd(fileSvc service.FileService) *cobra.Command {
 		Short: "Manage files",
 		Long: `Manage files in the current Uploadcare project.
 
-Subcommands cover the full file lifecycle: upload, list, inspect,
+Subcommands cover the full file lifecycle: upload, list, search, inspect,
 store, delete, and copy. Most subcommands support --json for
 structured output and --dry-run for safe previews.
 
@@ -29,6 +30,7 @@ stdin (--from-stdin), and can be piped from "file list --page-all".`,
 
 	cmd.AddCommand(newFileInfoCmd(fileSvc))
 	cmd.AddCommand(newFileListCmd(fileSvc))
+	cmd.AddCommand(newFileSearchCmd(fileSvc))
 	cmd.AddCommand(newFileUploadCmd(fileSvc))
 	cmd.AddCommand(newFileUploadFromURLCmd(fileSvc))
 	cmd.AddCommand(newFileStoreCmd(fileSvc))
@@ -55,7 +57,7 @@ Use --include-appdata to also return application-specific data
 
 JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
 is_ready, datetime_uploaded, datetime_stored, datetime_removed,
-original_file_url, metadata, appdata (with --include-appdata).`,
+original_file_url, metadata, tags, appdata (with --include-appdata).`,
 		Example: `  # Get file info as a table
   uploadcare file info 740e1b8c-1ad8-4324-b7ec-112345678900
 
@@ -285,6 +287,9 @@ func fileInfoTable(file *service.File) *output.TableData {
 	}
 	if file.DatetimeRemoved != nil {
 		table.AddRow("Removed At:", formatTime(*file.DatetimeRemoved))
+	}
+	if len(file.Tags) > 0 {
+		table.AddRow("Tags:", strings.Join(file.Tags, ", "))
 	}
 	table.AddRow("URL:", file.OriginalFileURL)
 	return table

@@ -201,6 +201,26 @@ func TestFileUpload_MetadataFlag(t *testing.T) {
 	}
 }
 
+func TestFileUpload_TagFlags(t *testing.T) {
+	tmpFile := createTestFile(t, "test.txt", "hello")
+	var capturedTags []string
+	mock := &mockFileService{
+		uploadFunc: func(_ context.Context, params service.UploadParams) (*service.File, error) {
+			capturedTags = params.Tags
+			return testFile(), nil
+		},
+	}
+
+	_, _, err := executeCommand(t, newTestRoot(mock), "file", "upload",
+		"--tag", " Featured ", "--tag", "vacation", "--tag", "FEATURED", tmpFile)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := strings.Join(capturedTags, ","); got != "featured,vacation" {
+		t.Errorf("tags = %q, want featured,vacation", got)
+	}
+}
+
 func TestParseMetadata(t *testing.T) {
 	tests := []struct {
 		name    string

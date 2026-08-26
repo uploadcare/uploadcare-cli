@@ -131,6 +131,26 @@ func TestFileUploadFromURL_Metadata(t *testing.T) {
 	}
 }
 
+func TestFileUploadFromURL_TagFlags(t *testing.T) {
+	var capturedParams service.URLUploadParams
+	mock := &mockFileService{
+		uploadFromURLFunc: func(_ context.Context, params service.URLUploadParams) (*service.File, error) {
+			capturedParams = params
+			return testFile(), nil
+		},
+	}
+
+	_, _, err := executeCommand(t, newTestRoot(mock), "file", "upload-from-url",
+		"--tag", " Remote ", "--tag", "featured", "--tag", "REMOTE",
+		"https://example.com/image.jpg")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := strings.Join(capturedParams.Tags, ","); got != "remote,featured" {
+		t.Errorf("tags = %q, want remote,featured", got)
+	}
+}
+
 func TestFileUploadFromURL_CheckDuplicates(t *testing.T) {
 	var capturedParams service.URLUploadParams
 
