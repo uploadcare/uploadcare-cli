@@ -650,7 +650,8 @@ func TestTruncateAppData(t *testing.T) {
 		{"empty", nil, 50, ""},
 		{"short", json.RawMessage(`{"ok":true}`), 50, `{"ok":true}`},
 		{"exact", json.RawMessage(`12345`), 5, `12345`},
-		{"over", json.RawMessage(`{"uc_clamav_virus_scan":{"data":{"infected":false}}}`), 20, `{"uc_clamav_virus_sc...`},
+		{"over", json.RawMessage(`{"uc_clamav_virus_scan":{"data":{"infected":false}}}`), 20, `{"uc_clamav_virus...`},
+		{"multibyte", json.RawMessage(`{"note":"日本語テキストです"}`), 12, `{"note":"...`},
 	}
 
 	for _, tt := range tests {
@@ -658,6 +659,47 @@ func TestTruncateAppData(t *testing.T) {
 			got := truncateAppData(tt.data, tt.maxLen)
 			if got != tt.want {
 				t.Errorf("truncateAppData(%q, %d) = %q, want %q", string(tt.data), tt.maxLen, got, tt.want)
+			}
+		})
+	}
+}
+
+// A filename may come back from the API with a literal tab or newline in it.
+// Left alone it splits the record across lines and, in the streaming path,
+// shifts every field after it. See issue #4.
+func TestFileList_ControlCharsInFilename(t *testing.T) {
+	f := testFile()
+	f.Filename = "two\nlines\tand\ttabs.jpg"
+
+	for _, tt := range []struct {
+		name  string
+		args  []string
+		lines int
+	}{
+		{"table", []string{"file", "list"}, 2},
+		{"stream", []string{"file", "list", "--page-all"}, 1},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := &mockFileService{
+				listFunc: func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error) {
+					return &service.FileListResult{Files: []service.File{*f}, Total: 1}, nil
+				},
+				iterateFunc: func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error {
+					return fn(*f)
+				},
+			}
+
+			stdout, _, err := executeCommand(t, newTestRoot(mock), tt.args...)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			got := strings.Split(strings.TrimRight(stdout, "\n"), "\n")
+			if len(got) != tt.lines {
+				t.Errorf("expected %d lines, got %d:\n%s", tt.lines, len(got), stdout)
+			}
+			if strings.Count(got[len(got)-1], "\t") > 4 {
+				t.Errorf("filename must not introduce extra fields:\n%q", got[len(got)-1])
 			}
 		})
 	}
