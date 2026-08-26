@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -75,6 +76,10 @@ func mapFileInfo(info file.Info) *service.File {
 		IsStored: info.StoredAt != nil,
 		URL:      info.URL,
 		Metadata: info.Metadata,
+		Tags:     info.Tags,
+	}
+	if f.Tags == nil {
+		f.Tags = []string{}
 	}
 
 	if info.OriginalFileURL != nil {
@@ -112,6 +117,7 @@ func mapUploadFileInfo(info upload.FileInfo) *service.File {
 		IsImage:  info.IsImage,
 		IsReady:  info.IsReady,
 		IsStored: info.IsStored,
+		Tags:     []string{},
 	}
 }
 
@@ -166,6 +172,123 @@ func (s *fileService) Iterate(ctx context.Context, opts service.FileListOptions,
 	return nil
 }
 
+func (s *fileService) Search(ctx context.Context, opts service.FileSearchOptions) (*service.FileSearchResult, error) {
+	search, err := s.sdkFileSvc.Search(ctx, buildSearchParams(opts))
+	if err != nil {
+		return nil, err
+	}
+
+	files := make([]service.File, 0, opts.Limit)
+	for len(files) < opts.Limit && search.Next() {
+		match, err := search.ReadResult()
+		// Next() can report a pending next pointer for a page that turns
+		// out empty (stale matches filtered server-side); that is clean
+		// exhaustion, not an error.
+		if errors.Is(err, ucare.ErrEndOfResults) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, *mapSearchMatch(*match))
+	}
+	return &service.FileSearchResult{Files: files, Total: search.Total()}, nil
+}
+
+func (s *fileService) IterateSearch(ctx context.Context, opts service.FileSearchOptions, fn func(service.File) error) (uint64, error) {
+	search, err := s.sdkFileSvc.Search(ctx, buildSearchParams(opts))
+	if err != nil {
+		return 0, err
+	}
+	total := search.Total()
+	// The API serves at most the first MaxSearchOffsetLimit matches of a
+	// search; stop cleanly at the window instead of following a next
+	// cursor the server cannot satisfy.
+	remaining := file.MaxSearchOffsetLimit - opts.Offset
+	for read := 0; read < remaining && search.Next(); read++ {
+		match, err := search.ReadResult()
+		if errors.Is(err, ucare.ErrEndOfResults) {
+			break
+		}
+		if err != nil {
+			return total, err
+		}
+		if err := fn(*mapSearchMatch(*match)); err != nil {
+			return total, err
+		}
+	}
+	return total, nil
+}
+
+func buildSearchParams(opts service.FileSearchOptions) file.SearchParams {
+	params := file.SearchParams{
+		Limit:     ucare.Uint64(uint64(opts.Limit)),
+		Offset:    ucare.Uint64(uint64(opts.Offset)),
+		Query:     opts.Query,
+		Exact:     opts.Exact,
+		IsImage:   opts.IsImage,
+		Fuzziness: opts.Fuzziness,
+	}
+	if opts.IncludeAppData {
+		params.Include = ucare.String(file.SearchIncludeAppData)
+	}
+	if opts.Phrase != nil {
+		params.Phrase = &file.SearchPhrase{
+			OriginalFilename: opts.Phrase.OriginalFilename,
+			Metadata:         opts.Phrase.Metadata,
+			DetectedMimeType: opts.Phrase.DetectedMimeType,
+		}
+	}
+	if opts.DatetimeUploaded != nil {
+		params.DatetimeUploaded = &file.SearchDatetime{
+			Gt: opts.DatetimeUploaded.Gt, Gte: opts.DatetimeUploaded.Gte,
+			Lt: opts.DatetimeUploaded.Lt, Lte: opts.DatetimeUploaded.Lte,
+		}
+	}
+	if opts.Size != nil {
+		params.Size = &file.SearchSize{
+			Gt: opts.Size.Gt, Gte: opts.Size.Gte,
+			Lt: opts.Size.Lt, Lte: opts.Size.Lte,
+		}
+	}
+	if opts.Tags != nil {
+		params.Tags = &file.SearchTags{Any: opts.Tags.Any, All: opts.Tags.All, None: opts.Tags.None}
+	}
+	for _, sort := range opts.Sort {
+		params.Sort = append(params.Sort, file.SearchSort(sort))
+	}
+	return params
+}
+
+func mapSearchMatch(match file.SearchMatch) *service.File {
+	f := mapFileInfo(file.Info{
+		BasicFileInfo: file.BasicFileInfo{
+			ID:               match.ID,
+			MimeType:         match.MimeType,
+			OriginalFileName: match.OriginalFileName,
+			Size:             match.Size,
+			IsImage:          match.IsImage,
+			IsReady:          match.IsReady,
+		},
+		RemovedAt:       match.RemovedAt,
+		StoredAt:        match.StoredAt,
+		UploadedAt:      match.UploadedAt,
+		OriginalFileURL: match.OriginalFileURL,
+		URL:             match.URL,
+		Metadata:        match.Metadata,
+		Tags:            match.Tags,
+		AppData:         match.AppData,
+	})
+	if match.Highlight != nil {
+		f.Highlight = &service.FileSearchHighlight{
+			OriginalFilename: match.Highlight.OriginalFileName,
+			DetectedMimeType: match.Highlight.DetectedMimeType,
+			Metadata:         match.Highlight.Metadata,
+		}
+	}
+	return f
+}
+
 func buildListParams(opts service.FileListOptions) (file.ListParams, error) {
 	params := file.ListParams{}
 	if opts.Ordering != "" {
@@ -213,6 +336,7 @@ func (s *fileService) Upload(ctx context.Context, params service.UploadParams) (
 		ContentType:        params.ContentType,
 		ToStore:            toStore,
 		Metadata:           params.Metadata,
+		Tags:               params.Tags,
 		MultipartThreshold: params.MultipartThreshold,
 	}
 
@@ -250,6 +374,7 @@ func (s *fileService) UploadFromURL(ctx context.Context, params service.URLUploa
 		URL:      params.URL,
 		ToStore:  toStore,
 		Metadata: params.Metadata,
+		Tags:     params.Tags,
 	}
 	if params.CheckDuplicates {
 		sdkParams.CheckURLDuplicates = ucare.String(upload.URLDuplicatesTrue)

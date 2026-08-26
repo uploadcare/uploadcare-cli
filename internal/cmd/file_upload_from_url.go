@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ func newFileUploadFromURLCmd(fileSvc service.FileService) *cobra.Command {
 	var (
 		store           string
 		metadata        []string
+		tags            []string
 		timeout         time.Duration
 		checkDuplicates bool
 		saveDuplicates  bool
@@ -47,8 +49,10 @@ Use --dry-run to validate URLs without uploading.
 
 Returns a single JSON object for one URL, or an array for multiple URLs.
 
+Tags can be attached during upload with repeatable --tag flags.
+
 JSON fields: uuid, size, filename, mime_type, is_image, is_stored,
-is_ready, datetime_uploaded, original_file_url, metadata.`,
+is_ready, datetime_uploaded, original_file_url, metadata, tags.`,
 		Example: `  # Upload from a single URL
   uploadcare file upload-from-url https://example.com/photo.jpg
 
@@ -58,6 +62,9 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
   # Upload with metadata and deduplication
   uploadcare file upload-from-url https://example.com/photo.jpg \
     --metadata source=web --check-duplicates --save-duplicates
+
+  # Upload with multiple tags
+  uploadcare file upload-from-url https://example.com/photo.jpg --tag remote --tag featured
 
   # Upload multiple URLs, get only UUIDs
   uploadcare file upload-from-url \
@@ -72,6 +79,10 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 			case "auto", "true", "false":
 			default:
 				return ExitErrorf(2, "invalid --store value: %q (must be \"auto\", \"true\", or \"false\")", store)
+			}
+			normalizedTags, err := validate.NormalizeTags(tags, validate.MaxTagCount)
+			if err != nil {
+				return usageError(fmt.Errorf("--tag: %w", err))
 			}
 
 			svc := fileSvc
@@ -111,7 +122,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 			}
 
 			if dryRun {
-				return runUploadFromURLDryRun(cmd, urls, opts, formatter)
+				return runUploadFromURLDryRun(cmd, urls, normalizedTags, opts, formatter)
 			}
 
 			var results []*service.File
@@ -120,6 +131,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 					URL:             u,
 					Store:           store,
 					Metadata:        meta,
+					Tags:            normalizedTags,
 					Timeout:         timeout,
 					CheckDuplicates: checkDuplicates,
 					SaveDuplicates:  saveDuplicates,
@@ -152,6 +164,7 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 	f := cmd.Flags()
 	f.StringVar(&store, "store", "auto", "File storage behavior (auto, true, false)")
 	f.StringSliceVar(&metadata, "metadata", nil, "Metadata key=value pairs (repeatable)")
+	f.StringArrayVar(&tags, "tag", nil, "Tag attached during upload (repeatable)")
 	f.DurationVar(&timeout, "timeout", 5*time.Minute, "Max wait time for upload to complete")
 	f.BoolVar(&checkDuplicates, "check-duplicates", false, "Check for duplicate URLs")
 	f.BoolVar(&saveDuplicates, "save-duplicates", false, "Save duplicate URL information")
@@ -161,10 +174,11 @@ is_ready, datetime_uploaded, original_file_url, metadata.`,
 	return cmd
 }
 
-func runUploadFromURLDryRun(cmd *cobra.Command, urls []string, opts output.FormatOptions, formatter output.Formatter) error {
+func runUploadFromURLDryRun(cmd *cobra.Command, urls, tags []string, opts output.FormatOptions, formatter output.Formatter) error {
 	type dryRunEntry struct {
-		URL    string `json:"url"`
-		Status string `json:"status"`
+		URL    string   `json:"url"`
+		Status string   `json:"status"`
+		Tags   []string `json:"tags,omitempty"`
 	}
 	var entries []dryRunEntry
 	for _, u := range urls {
@@ -172,16 +186,24 @@ func runUploadFromURLDryRun(cmd *cobra.Command, urls []string, opts output.Forma
 		if err := validate.URL(u); err != nil {
 			status = err.Error()
 		}
-		entries = append(entries, dryRunEntry{URL: u, Status: status})
+		entries = append(entries, dryRunEntry{URL: u, Status: status, Tags: tags})
 	}
 
 	if opts.JSON {
 		return formatter.Format(cmd.OutOrStdout(), entries)
 	}
 
-	table := output.NewTableData("URL", "STATUS")
+	headers := []string{"URL", "STATUS"}
+	if len(tags) > 0 {
+		headers = append(headers, "TAGS")
+	}
+	table := output.NewTableData(headers...)
 	for _, e := range entries {
-		table.AddRow(e.URL, e.Status)
+		row := []string{e.URL, e.Status}
+		if len(tags) > 0 {
+			row = append(row, strings.Join(tags, ", "))
+		}
+		table.AddRow(row...)
 	}
 	return formatter.Format(cmd.OutOrStdout(), table)
 }

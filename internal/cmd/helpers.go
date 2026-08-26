@@ -86,6 +86,31 @@ func metadataServiceFromCmd(cmd *cobra.Command) (service.MetadataService, error)
 	return svc, nil
 }
 
+// tagServiceFromCmd resolves credentials and creates a TagService.
+func tagServiceFromCmd(cmd *cobra.Command) (service.TagService, error) {
+	opts := formatOptionsFromCmd(cmd)
+	verbose := output.NewVerboseLogger(opts.Verbose, cmd.ErrOrStderr())
+
+	loader, err := configLoaderFromCmd(cmd, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	creds, err := loader.ResolveProjectCredentials(verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+	if err := creds.RequireBoth(); err != nil {
+		return nil, &ExitError{Code: 3, Err: err}
+	}
+
+	httpClient := client.NewVerboseHTTPClient(verbose)
+	svc, err := client.NewTagService(creds.PublicKey, creds.SecretKey, httpClient, verbose)
+	if err != nil {
+		return nil, &ExitError{Code: 1, Err: err}
+	}
+	return svc, nil
+}
+
 // groupServiceFromCmd resolves credentials and creates a GroupService.
 func groupServiceFromCmd(cmd *cobra.Command) (service.GroupService, error) {
 	opts := formatOptionsFromCmd(cmd)

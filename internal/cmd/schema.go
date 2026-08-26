@@ -84,6 +84,8 @@ No authentication required.`,
 					"For batch operations (file store, file delete), exit code 1 means partial success — check the 'problems' field in JSON output.",
 					"When piping between commands, use --json uuid or --jq '.uuid' to emit just the UUID for --from-stdin consumption.",
 					"For file download, use --output-dir for multiple UUIDs or --from-stdin; --output - streams bytes to stdout and cannot be combined with --json.",
+					"File search requires at least one query or filter. Search results can lag recent file, metadata, and tag changes. The API serves at most the first 1000 matches of a search.",
+					"Tag flags are repeatable. Tag update applies all --delete values before all --add values. Tag mutations with --dry-run add \"status\": \"would change\" to their JSON output.",
 					"For 'project usage': --to must be strictly before today in UTC. Using today's date or a future date will return a validation error.",
 				},
 				URLAPI: buildURLAPISchema(),
@@ -167,40 +169,34 @@ func collectCommands(cmd *cobra.Command, prefix string) []cmdSchema {
 	return result
 }
 
+// extractArgs derives argument bounds by probing the command's Args
+// validator with growing argument lists — the validator is what the CLI
+// actually enforces, while the Use string is display-only and ambiguous
+// (e.g. "<uuid> <tag>..." with MinimumNArgs(2)).
 func extractArgs(cmd *cobra.Command) argsSchema {
-	// Parse from Use string: "command <arg1> <arg2>..." or "command <arg>..."
-	use := cmd.Use
-	parts := strings.Fields(use)
-	if len(parts) <= 1 {
+	validator := cmd.Args
+	if validator == nil {
 		return argsSchema{Min: 0, Max: 0}
 	}
 
-	argParts := parts[1:]
-	min := 0
-	max := 0
-	hasVariadic := false
-
-	for _, p := range argParts {
-		if strings.HasSuffix(p, "...") {
-			hasVariadic = true
+	const probeMax = 8
+	minArgs, maxArgs := -1, -1
+	for n := 0; n <= probeMax; n++ {
+		if validator(cmd, make([]string, n)) != nil {
+			continue
 		}
-		if strings.HasPrefix(p, "<") {
-			min++
-			max++
-		} else if strings.HasPrefix(p, "[") {
-			max++
+		if minArgs == -1 {
+			minArgs = n
 		}
+		maxArgs = n
 	}
-
-	if hasVariadic {
-		// ArbitraryArgs — set min to 0 for optional variadic
-		if min > 0 {
-			min-- // The variadic arg itself is optional beyond 0
-		}
-		max = -1 // unlimited
+	if minArgs == -1 {
+		return argsSchema{Min: 0, Max: 0}
 	}
-
-	return argsSchema{Min: min, Max: max}
+	if validator(cmd, make([]string, probeMax*8)) == nil {
+		maxArgs = -1 // unlimited
+	}
+	return argsSchema{Min: minArgs, Max: maxArgs}
 }
 
 func parseExamples(example string) []string {
@@ -244,13 +240,19 @@ func parseExamples(example string) []string {
 // jsonFieldsForCommand returns the known JSON field names for a command.
 // These correspond to the struct JSON tags used when --json output is active.
 func jsonFieldsForCommand(path string) []string {
-	fileFields := []string{"uuid", "size", "filename", "mime_type", "is_image", "is_stored", "is_ready", "datetime_uploaded", "datetime_stored", "datetime_removed", "url", "original_file_url", "metadata", "appdata"}
+	fileFields := []string{"uuid", "size", "filename", "mime_type", "is_image", "is_stored", "is_ready", "datetime_uploaded", "datetime_stored", "datetime_removed", "url", "original_file_url", "metadata", "tags", "appdata"}
 
 	switch path {
 	case "file info", "file upload", "file upload-from-url", "file local-copy":
 		return fileFields
 	case "file list":
 		return fileFields
+	case "file search":
+		return append(fileFields, "highlight")
+	case "tag list":
+		return []string{"tags"}
+	case "tag replace", "tag update", "tag clear":
+		return []string{"tags", "added", "deleted", "status"}
 	case "file store", "file delete":
 		return []string{"results", "problems"}
 	case "file remote-copy":

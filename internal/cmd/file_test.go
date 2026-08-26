@@ -18,6 +18,8 @@ type mockFileService struct {
 	infoFunc          func(ctx context.Context, uuid string, includeAppData bool) (*service.File, error)
 	listFunc          func(ctx context.Context, opts service.FileListOptions) (*service.FileListResult, error)
 	iterateFunc       func(ctx context.Context, opts service.FileListOptions, fn func(service.File) error) error
+	searchFunc        func(ctx context.Context, opts service.FileSearchOptions) (*service.FileSearchResult, error)
+	iterateSearchFunc func(ctx context.Context, opts service.FileSearchOptions, fn func(service.File) error) (uint64, error)
 	uploadFunc        func(ctx context.Context, params service.UploadParams) (*service.File, error)
 	uploadFromURLFunc func(ctx context.Context, params service.URLUploadParams) (*service.File, error)
 	storeFunc         func(ctx context.Context, uuids []string) (*service.BatchResult, error)
@@ -46,6 +48,20 @@ func (m *mockFileService) Iterate(ctx context.Context, opts service.FileListOpti
 		return m.iterateFunc(ctx, opts, fn)
 	}
 	return errors.New("not implemented")
+}
+
+func (m *mockFileService) Search(ctx context.Context, opts service.FileSearchOptions) (*service.FileSearchResult, error) {
+	if m.searchFunc != nil {
+		return m.searchFunc(ctx, opts)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockFileService) IterateSearch(ctx context.Context, opts service.FileSearchOptions, fn func(service.File) error) (uint64, error) {
+	if m.iterateSearchFunc != nil {
+		return m.iterateSearchFunc(ctx, opts, fn)
+	}
+	return 0, errors.New("not implemented")
 }
 
 func (m *mockFileService) Upload(ctx context.Context, params service.UploadParams) (*service.File, error) {

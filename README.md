@@ -4,7 +4,8 @@ A non-interactive command-line interface for the [Uploadcare](https://uploadcare
 
 ## Features
 
-- **File management** — upload, list, copy, store, and delete files
+- **File management** — upload, list, search, copy, store, and delete files
+- **File tags** — attach tags while uploading; list, replace, update, or clear them later
 - **Project management** — create, update, delete projects; manage API secrets and usage metrics
 - **JSON & NDJSON output** — structured output with field filtering and `jq` support
 - **Stdin piping** — compose commands for batch operations
@@ -52,7 +53,13 @@ export UPLOADCARE_SECRET_KEY="your-secret-key"
 uploadcare file list
 
 # Upload a file
-uploadcare file upload photo.jpg
+uploadcare file upload photo.jpg --tag vacation --tag featured
+
+# Search by text and tags
+uploadcare file search invoice --tag-all approved --tag-none archived
+
+# Add and remove multiple tags atomically
+uploadcare tag update <uuid> --delete draft --add approved --add featured
 
 # Get file info as JSON
 uploadcare file info <uuid> --json all
@@ -164,6 +171,7 @@ Commands validate that the required credentials are present before executing. Mi
 uploadcare
 ├── file
 │   ├── list              List files in project
+│   ├── search            Search files by text, fields, ranges, and tags
 │   ├── info              Get file details
 │   ├── upload            Upload local file(s)
 │   ├── upload-from-url   Upload file from URL
@@ -172,6 +180,11 @@ uploadcare
 │   ├── local-copy        Copy file within Uploadcare storage
 │   ├── remote-copy       Copy file to remote storage
 │   └── download          Download file(s) from the CDN to local disk
+├── tag
+│   ├── list              List a file's tags
+│   ├── replace           Replace a file's complete tag set
+│   ├── update            Atomically add and delete tags
+│   └── clear             Remove all tags from a file
 ├── metadata
 │   ├── list              List all metadata keys for a file
 │   ├── get               Get a metadata value by key
@@ -224,6 +237,67 @@ uploadcare
 | `-q, --quiet` | Suppress non-error output |
 | `-v, --verbose` | Log HTTP requests/responses to stderr |
 | `--no-color` | Disable colored output |
+
+### File search
+
+Search accepts an optional full-text query plus exact, phrase, range, image,
+and tag filters. At least one query or filter is required. Full-text and phrase
+values must contain at least four characters.
+
+```bash
+# Full-text search with exact MIME type and tag filters
+uploadcare file search invoice \
+  --exact detected_mime_type=application/pdf \
+  --tag-all approved \
+  --tag-none archived \
+  --sort score \
+  --sort=-datetime_uploaded
+
+# Exact metadata match
+uploadcare file search --exact 'metadata[camera]=Canon' --json uuid,filename,tags,highlight
+
+# Stream every reachable page as NDJSON
+uploadcare file search --tag-any featured --page-all --json uuid,tags
+```
+
+Range filters are `--uploaded-gt`, `--uploaded-gte`, `--uploaded-lt`,
+`--uploaded-lte`, and the corresponding `--size-*` flags. `--limit` accepts
+1–100 and `--offset + --limit` cannot exceed 1000. The API serves at most the
+first 1000 matches of a search, so `--page-all` streams up to 1000 results.
+Pages are filled by following the API's next cursor, so offset-stepped pages
+may occasionally overlap; prefer `--page-all` when completeness matters.
+Search uses an asynchronous index, so recent uploads, metadata changes, and
+tag changes may take time to appear.
+
+### File tags
+
+Tags are normalized to lowercase, de-duplicated in first-seen order, and may
+contain `a-z`, `0-9`, `.`, `_`, and `-`. Each tag can contain up to 100
+characters, and a file can have up to 50 tags.
+
+```bash
+# Add tags during direct or URL upload
+uploadcare file upload photo.jpg --tag vacation --tag featured
+uploadcare file upload-from-url https://example.com/photo.jpg --tag remote
+
+# Inspect and replace the complete tag set
+uploadcare tag list <uuid>
+uploadcare tag replace <uuid> approved featured
+
+# Repeat --add and --delete as many times as needed
+uploadcare tag update <uuid> \
+  --delete draft \
+  --delete needs-review \
+  --add approved \
+  --add featured
+
+# Preview a mutation or remove every tag
+uploadcare tag update <uuid> --delete draft --add approved --dry-run
+uploadcare tag clear <uuid>
+```
+
+Updates apply every deletion before every addition. If the same tag is supplied
+to both operations, it is present afterward.
 
 ## Output modes
 
