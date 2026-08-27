@@ -215,9 +215,9 @@ original_file_url, metadata, appdata (with --include-appdata).`,
 
 			var table *output.TableData
 			if includeAppData {
-				table = output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED", "APPDATA")
+				table = output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED", "APPDATA").Flexible(2)
 			} else {
-				table = output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED")
+				table = output.NewTableData("UUID", "SIZE", "FILENAME", "STORED", "UPLOADED").Flexible(2)
 			}
 			for _, f := range result.Files {
 				row := []string{
@@ -262,12 +262,12 @@ func runFileListAll(cmd *cobra.Command, svc service.FileService, listOpts servic
 		}
 		if includeAppData {
 			_, err := fmt.Fprintf(w, "%s\t%d\t%s\t%v\t%s\t%s\n",
-				f.UUID, f.Size, f.Filename, f.IsStored, formatTime(f.DatetimeUploaded),
+				f.UUID, f.Size, output.SanitizeCell(f.Filename), f.IsStored, formatTime(f.DatetimeUploaded),
 				truncateAppData(f.AppData, 50))
 			return err
 		}
 		_, err := fmt.Fprintf(w, "%s\t%d\t%s\t%v\t%s\n",
-			f.UUID, f.Size, f.Filename, f.IsStored, formatTime(f.DatetimeUploaded))
+			f.UUID, f.Size, output.SanitizeCell(f.Filename), f.IsStored, formatTime(f.DatetimeUploaded))
 		return err
 	})
 }
@@ -299,11 +299,7 @@ func truncateAppData(data json.RawMessage, maxLen int) string {
 	if len(data) == 0 {
 		return ""
 	}
-	s := string(data)
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
+	return output.TruncateEnd(string(data), maxLen)
 }
 
 func formatTime(t time.Time) string {

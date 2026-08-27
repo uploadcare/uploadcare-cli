@@ -223,7 +223,7 @@ is_ready, datetime_uploaded, original_file_url, metadata, tags.`,
 				return formatter.Format(cmd.OutOrStdout(), results)
 			}
 
-			table := output.NewTableData("UUID", "SIZE", "FILENAME")
+			table := output.NewTableData("UUID", "SIZE", "FILENAME").Flexible(2)
 			for _, r := range results {
 				table.AddRow(r.UUID, strconv.FormatInt(r.Size, 10), r.Filename)
 			}
@@ -270,7 +270,7 @@ func runUploadDryRun(cmd *cobra.Command, entries []uploadFileEntry, tags []strin
 	if len(tags) > 0 {
 		headers = append(headers, "TAGS")
 	}
-	table := output.NewTableData(headers...)
+	table := output.NewTableData(headers...).Flexible(0)
 	for _, e := range dryEntries {
 		row := []string{e.Path, strconv.FormatInt(e.Size, 10), e.ContentType}
 		if len(tags) > 0 {

@@ -77,7 +77,7 @@ is specified. Returns "No metadata found" when the file has no metadata.`,
 				return nil
 			}
 
-			table := output.NewTableData("KEY", "VALUE")
+			table := output.NewTableData("KEY", "VALUE").Flexible(0, 1)
 			for k, v := range meta {
 				table.AddRow(k, v)
 			}

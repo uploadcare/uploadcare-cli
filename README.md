@@ -304,11 +304,22 @@ to both operations, it is present afterward.
 **Human-readable** (default) — tabular output to stdout:
 
 ```
-$ uploadcare file list --limit 3
-UUID                                  SIZE      FILENAME       STORED   UPLOADED
-a1b2c3d4-e5f6-7890-abcd-ef1234567890 1258000   photo.jpg      true     2026-03-01T00:00:00Z
-b2c3d4e5-f6a7-8901-bcde-f12345678901 348160    document.pdf   false    2026-03-02T00:00:00Z
+$ uploadcare file list --limit 2
+UUID                                  SIZE     FILENAME                 STORED  UPLOADED
+a1b2c3d4-e5f6-7890-abcd-ef1234567890  1258000  vacation-p...nal-v3.jpg  true    2026-03-01T00:00:00Z
+b2c3d4e5-f6a7-8901-bcde-f12345678901  348160   document.pdf             false   2026-03-02T00:00:00Z
 ```
+
+Long filenames, URLs, and paths are shortened to keep one record per line,
+marked with `...` and keeping the file extension visible. UUIDs and timestamps
+are never shortened, so they stay copy-pasteable. Redirected or piped output is
+never shortened:
+
+```bash
+uploadcare file list | less   # full filenames
+```
+
+Use `--json` for values you intend to parse.
 
 **JSON** — activated with `--json all` (all fields) or `--json field1,field2` (specific fields):
 

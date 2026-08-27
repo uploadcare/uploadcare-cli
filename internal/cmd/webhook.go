@@ -88,7 +88,7 @@ datetime_created, datetime_updated.`,
 				return formatter.Format(cmd.OutOrStdout(), webhooks)
 			}
 
-			table := output.NewTableData("ID", "TARGET_URL", "EVENT", "ACTIVE", "CREATED")
+			table := output.NewTableData("ID", "TARGET_URL", "EVENT", "ACTIVE", "CREATED").Flexible(1)
 			for _, w := range webhooks {
 				table.AddRow(
 					strconv.Itoa(w.ID),

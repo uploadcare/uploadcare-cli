@@ -195,7 +195,7 @@ func runBatchCommand(
 			return err
 		}
 	} else {
-		table := output.NewTableData("UUID", "FILENAME", "STATUS")
+		table := output.NewTableData("UUID", "FILENAME", "STATUS").Flexible(1, 2)
 		for _, f := range merged.Files {
 			table.AddRow(f.UUID, f.Filename, "ok")
 		}
@@ -261,7 +261,7 @@ func runBatchDryRun(
 			return err
 		}
 	} else {
-		table := output.NewTableData("UUID", "FILENAME", "STATUS")
+		table := output.NewTableData("UUID", "FILENAME", "STATUS").Flexible(1, 2)
 		for _, e := range entries {
 			table.AddRow(e.UUID, e.Filename, e.Status)
 		}

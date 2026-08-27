@@ -278,7 +278,7 @@ func fileSearchTable(files []service.File, includeAppData bool) *output.TableDat
 	if includeAppData {
 		headers = append(headers, "APPDATA")
 	}
-	table := output.NewTableData(headers...)
+	table := output.NewTableData(headers...).Flexible(2)
 	for _, file := range files {
 		row := []string{file.UUID, strconv.FormatInt(file.Size, 10), file.Filename, file.MimeType, formatTime(file.DatetimeUploaded)}
 		if includeAppData {
@@ -301,12 +301,12 @@ func runFileSearchAll(cmd *cobra.Command, svc service.FileService, searchOpts se
 		}
 		if includeAppData {
 			_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\t%d\t%s\t%s\t%s\t%s\n",
-				file.UUID, file.Size, file.Filename, file.MimeType, formatTime(file.DatetimeUploaded),
+				file.UUID, file.Size, output.SanitizeCell(file.Filename), file.MimeType, formatTime(file.DatetimeUploaded),
 				truncateAppData(file.AppData, 50))
 			return err
 		}
 		_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\t%d\t%s\t%s\t%s\n",
-			file.UUID, file.Size, file.Filename, file.MimeType, formatTime(file.DatetimeUploaded))
+			file.UUID, file.Size, output.SanitizeCell(file.Filename), file.MimeType, formatTime(file.DatetimeUploaded))
 		return err
 	})
 	if err != nil {

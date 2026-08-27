@@ -616,7 +616,7 @@ func expandNameTemplate(tmpl string, f *service.File, effects string) (string, e
 }
 
 func downloadRowsTable(rows []downloadRow) *output.TableData {
-	t := output.NewTableData("UUID", "PATH", "SIZE", "STATUS")
+	t := output.NewTableData("UUID", "PATH", "SIZE", "STATUS").Flexible(1)
 	for _, r := range rows {
 		t.AddRow(r.UUID, r.Path, strconv.FormatInt(r.Size, 10), r.Status)
 	}

@@ -196,7 +196,7 @@ filesize_limit, autostore_enabled.`,
 				return formatter.Format(cmd.OutOrStdout(), result.Projects)
 			}
 
-			table := output.NewTableData("PUB_KEY", "NAME", "SHARED", "BLOCKED")
+			table := output.NewTableData("PUB_KEY", "NAME", "SHARED", "BLOCKED").Flexible(1)
 			for _, p := range result.Projects {
 				blocked := ""
 				if p.IsBlocked != nil && *p.IsBlocked {
