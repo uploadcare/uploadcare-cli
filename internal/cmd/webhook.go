@@ -15,6 +15,7 @@ var validWebhookEvents = []string{
 	"file.stored",
 	"file.deleted",
 	"file.info_updated",
+	"moderation.state_changed",
 }
 
 func isValidWebhookEvent(event string) bool {
@@ -34,7 +35,7 @@ func newWebhookCmd(webhookSvc service.WebhookService) *cobra.Command {
 
 Webhooks deliver HTTP POST notifications to your endpoint when events
 occur. Valid events: file.uploaded, file.stored, file.deleted,
-file.info_updated.
+file.info_updated, moderation.state_changed.
 
 Subcommands: list, create, update, delete.`,
 	}
@@ -121,7 +122,8 @@ occurs. The URL must be valid and publicly accessible.
 
 Defaults: --event file.uploaded, --active true.
 
-Valid events: file.uploaded, file.stored, file.deleted, file.info_updated.
+Valid events: file.uploaded, file.stored, file.deleted, file.info_updated,
+moderation.state_changed.
 
 Use --signing-secret to set a secret for HMAC-SHA256 webhook verification.
 Use --dry-run to validate parameters without creating.
@@ -133,6 +135,9 @@ datetime_created.`,
 
   # Create a webhook for file deletions
   uploadcare webhook create https://example.com/hooks/delete --event file.deleted
+
+  # Create a webhook for moderation state changes
+  uploadcare webhook create https://example.com/hooks/moderation --event moderation.state_changed
 
   # Create an inactive webhook with a signing secret
   uploadcare webhook create https://example.com/hooks/upload \
@@ -228,7 +233,8 @@ Only the flags you provide are changed — omitted flags leave the
 current value unchanged. The webhook ID is a numeric integer
 (shown in "webhook list" output).
 
-Valid events: file.uploaded, file.stored, file.deleted, file.info_updated.
+Valid events: file.uploaded, file.stored, file.deleted, file.info_updated,
+moderation.state_changed.
 
 The --active flag accepts "true" or "false" as a string value.
 Use --dry-run to validate parameters without applying changes.
