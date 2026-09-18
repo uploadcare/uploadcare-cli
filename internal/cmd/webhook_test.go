@@ -177,6 +177,46 @@ func TestWebhookCreate_InvalidURL(t *testing.T) {
 	}
 }
 
+func TestWebhookCreate_ModerationStateChangedEvent(t *testing.T) {
+	var capturedEvent string
+	mock := &mockWebhookService{
+		createFunc: func(ctx context.Context, params service.WebhookCreateParams) (*service.Webhook, error) {
+			capturedEvent = params.Event
+			w := testWebhook()
+			w.Event = params.Event
+			return w, nil
+		},
+	}
+
+	root := newTestRootWithWebhook(mock)
+	_, _, err := executeCommand(t, root, "webhook", "create", "https://example.com/webhook", "--event", "moderation.state_changed")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedEvent != "moderation.state_changed" {
+		t.Errorf("expected event %q, got %q", "moderation.state_changed", capturedEvent)
+	}
+}
+
+func TestWebhookUpdate_ModerationStateChangedEvent(t *testing.T) {
+	var capturedEvent *string
+	mock := &mockWebhookService{
+		updateFunc: func(ctx context.Context, id string, params service.WebhookUpdateParams) (*service.Webhook, error) {
+			capturedEvent = params.Event
+			return testWebhook(), nil
+		},
+	}
+
+	root := newTestRootWithWebhook(mock)
+	_, _, err := executeCommand(t, root, "webhook", "update", "123", "--event", "moderation.state_changed")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if capturedEvent == nil || *capturedEvent != "moderation.state_changed" {
+		t.Errorf("expected event %q, got %v", "moderation.state_changed", capturedEvent)
+	}
+}
+
 func TestWebhookCreate_InvalidEvent(t *testing.T) {
 	mock := &mockWebhookService{}
 	root := newTestRootWithWebhook(mock)
